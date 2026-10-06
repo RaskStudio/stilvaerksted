@@ -2,72 +2,69 @@
   body { font: 13px/1.45 Inter, system-ui, sans-serif; margin: 0; padding: 14px; color: var(--figma-color-text, #222); background: var(--figma-color-bg, #fff); }
   h1 { font-size: 14px; margin: 0 0 4px; }
   p { margin: 0 0 10px; color: var(--figma-color-text-secondary, #666); }
-  textarea, input[type=text] { width: 100%; box-sizing: border-box; font: 12px/1.4 ui-monospace, Menlo, monospace; border: 1px solid var(--figma-color-border, #ccc); border-radius: 6px; padding: 7px 8px; background: var(--figma-color-bg-secondary, #f5f5f5); color: inherit; }
-  textarea { height: 86px; resize: vertical; }
-  input[type=text] { font-family: inherit; font-size: 13px; }
-  label { display: block; margin: 10px 0 4px; font-weight: 600; }
-  .c { margin-top: 10px; }
-  .strip { display: flex; height: 22px; border-radius: 5px; overflow: hidden; margin-top: 5px; }
+  textarea { width: 100%; box-sizing: border-box; height: 96px; resize: vertical; font: 12px/1.4 ui-monospace, Menlo, monospace; border: 1px solid var(--figma-color-border, #ccc); border-radius: 6px; padding: 8px; background: var(--figma-color-bg-secondary, #f5f5f5); color: inherit; }
+  .strip { display: flex; height: 20px; border-radius: 5px; overflow: hidden; margin-top: 6px; }
   .strip i { flex: 1; }
-  .opts label { display: flex; gap: 8px; align-items: center; font-weight: 400; margin: 6px 0; }
-  button { width: 100%; margin-top: 12px; padding: 9px; border: 0; border-radius: 6px; font: 600 13px Inter, system-ui, sans-serif; cursor: pointer; background: var(--figma-color-bg-brand, #0d99ff); color: var(--figma-color-text-onbrand, #fff); }
-  button:disabled { opacity: .45; cursor: default; }
-  #msg { margin-top: 10px; min-height: 18px; }
+  details { margin-top: 12px; }
+  summary { cursor: pointer; font-weight: 600; }
+  details label { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
+  #msg { margin-top: 10px; min-height: 18px; font-weight: 600; }
   #msg.err { color: var(--figma-color-text-danger, #c00); }
 </style>
-<h1>Palet fra Stilværksted</h1>
-<p>Tryk "Kopiér til Figma" i Paletbygger på stilvaerksted.vercel.app, og indsæt teksten her.</p>
-<textarea id="src" placeholder='Indsæt her (Ctrl/⌘+V)'></textarea>
-<div id="form" hidden>
-  <label for="name">Navn på samlingen</label>
-  <input type="text" id="name" maxlength="60">
-  <div id="list"></div>
-  <div class="opts">
-    <label><input type="checkbox" id="o-vars" checked> Opret som variabler</label>
-    <label><input type="checkbox" id="o-styles" checked> Opret som farvestile</label>
-    <label><input type="checkbox" id="o-board" checked> Tegn en oversigt på lærredet</label>
-  </div>
-  <button id="go">Opret i Figma</button>
-</div>
+<h1>Indsæt din palet</h1>
+<p>Indsæt med Ctrl/⌘+V. Paletten oprettes med det samme. Du kan indsætte fra "Kopiér til plugin" i Stilværksted eller bare en række HEX-koder.</p>
+<textarea id="src" autofocus placeholder="#1b2a6b, #3d5afe, #f4c95d …"></textarea>
 <div id="msg"></div>
+<div id="list"></div>
+<details>
+  <summary>Indstillinger</summary>
+  <label><input type="checkbox" id="o-vars" checked> Variabler</label>
+  <label><input type="checkbox" id="o-styles" checked> Farvestile</label>
+  <label><input type="checkbox" id="o-board" checked> Oversigt på lærredet</label>
+</details>
 <script>
-  const HEX = /^#[0-9a-f]{6}$/i, ORDER = ['50','100','200','300','400','500','600','700','800','900','950'];
+  const ORDER = ['50','100','200','300','400','500','600','700','800','900','950'];
+  const TW = [[50,.97,.15],[100,.93,.3],[200,.87,.5],[300,.79,.75],[400,.7,.95],[500,.62,1],[600,.53,1],[700,.45,.9],[800,.37,.75],[900,.29,.6],[950,.21,.45]];
   const $ = (id) => document.getElementById(id);
-  let colors = [];
   const say = (t, err) => { $('msg').textContent = t; $('msg').className = err ? 'err' : ''; };
-  function read() {
-    colors = []; $('form').hidden = true; $('list').textContent = '';
-    const raw = $('src').value.trim(); if (!raw) return say('');
-    let d; try { d = JSON.parse(raw); } catch (e) { return say('Teksten kan ikke læses. Kopiér den igen fra Stilværksted.', true); }
-    if (!d || !Array.isArray(d.colors)) return say('Det ligner ikke en palet fra Stilværksted.', true);
-    colors = d.colors.filter((c) => c && HEX.test(c.hex)).map((c, i) => {
-      const steps = [['base', c.hex]];
-      ORDER.forEach((k) => { if (c.shades && HEX.test(c.shades[k])) steps.push([k, c.shades[k]]); });
-      return { name: String(c.name || 'farve-' + (i + 1)), steps };
+  const lin = (c) => { c /= 255; return c <= .04045 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4); };
+  const delin = (c) => 255 * (c <= .0031308 ? 12.92 * c : 1.055 * Math.pow(Math.max(c, 0), 1 / 2.4) - .055);
+  const toHex = (r) => '#' + r.map((v) => Math.round(Math.min(255, Math.max(0, v))).toString(16).padStart(2, '0')).join('');
+  function shades(hex) {
+    const [r, g, b] = [1, 3, 5].map((i) => lin(parseInt(hex.slice(i, i + 2), 16)));
+    const l = Math.cbrt(.4122214708 * r + .5363325363 * g + .0514459929 * b), m = Math.cbrt(.2119034982 * r + .6806995451 * g + .1073969566 * b), s = Math.cbrt(.0883024619 * r + .2817188376 * g + .6299787005 * b);
+    const A = 1.9779984951 * l - 2.428592205 * m + .4505937099 * s, B = .0259040371 * l + .7827717662 * m - .808675766 * s, C = Math.hypot(A, B), H = Math.atan2(B, A);
+    return TW.map(([k, L, f]) => {
+      const a = C * f * Math.cos(H), bb = C * f * Math.sin(H);
+      const l3 = Math.pow(L + .3963377774 * a + .2158037573 * bb, 3), m3 = Math.pow(L - .1055613458 * a - .0638541728 * bb, 3), s3 = Math.pow(L - .0894841775 * a - 1.291485548 * bb, 3);
+      return [String(k), toHex([4.0767416621 * l3 - 3.3077115913 * m3 + .2309699292 * s3, -1.2684380046 * l3 + 2.6097574011 * m3 - .3413193965 * s3, -.0041960863 * l3 - .7034186147 * m3 + 1.707614701 * s3].map(delin))];
     });
-    if (!colors.length) return say('Paletten indeholder ingen gyldige farver.', true);
-    $('name').value = String(d.name || 'Stilværksted');
-    colors.forEach((c, i) => {
-      const w = document.createElement('div'); w.className = 'c';
-      const inp = document.createElement('input'); inp.type = 'text'; inp.value = c.name; inp.maxLength = 40;
-      inp.setAttribute('aria-label', 'Navn på farve ' + (i + 1));
-      inp.addEventListener('input', () => { c.name = inp.value; });
-      const s = document.createElement('div'); s.className = 'strip';
-      c.steps.forEach(([, h]) => { const b = document.createElement('i'); b.style.background = h; s.appendChild(b); });
-      w.appendChild(inp); w.appendChild(s); $('list').appendChild(w);
-    });
-    $('form').hidden = false;
-    say(colors.length + ' farver med ' + colors[0].steps.length + ' trin hver. Ret navnene, hvis du vil.');
   }
-  $('src').addEventListener('input', read);
-  $('go').addEventListener('click', () => {
-    const names = colors.map((c) => c.name.trim());
-    if (names.some((n) => !n)) return say('Alle farver skal have et navn.', true);
-    if (new Set(names).size !== names.length) return say('To farver har samme navn.', true);
-    $('go').disabled = true; say('Opretter …');
-    parent.postMessage({ pluginMessage: { type: 'create', name: $('name').value.trim() || 'Stilværksted',
-      colors: colors.map((c) => ({ name: c.name.trim(), steps: c.steps })),
+  function parse(raw) {
+    const HEX = /^#[0-9a-f]{6}$/i;
+    try {
+      const d = JSON.parse(raw);
+      if (d && Array.isArray(d.colors)) return { name: String(d.name || 'Stilværksted'), colors: d.colors.filter((c) => c && HEX.test(c.hex)).map((c, i) => {
+        const steps = [['base', c.hex.toLowerCase()]];
+        ORDER.forEach((k) => { if (c.shades && HEX.test(c.shades[k])) steps.push([k, c.shades[k].toLowerCase()]); });
+        return { name: String(c.name || 'farve-' + (i + 1)), steps: steps.length > 1 ? steps : steps.concat(shades(c.hex)) };
+      }) };
+    } catch (e) {}
+    const found = [...new Set((raw.match(/#?\b[0-9a-f]{6}\b/gi) || []).map((h) => '#' + h.replace('#', '').toLowerCase()))];
+    return { name: 'Stilværksted', colors: found.map((h, i) => ({ name: 'farve-' + (i + 1), steps: [['base', h]].concat(shades(h)) })) };
+  }
+  function go() {
+    const raw = $('src').value.trim(); $('list').textContent = ''; if (!raw) return say('');
+    const d = parse(raw);
+    if (!d.colors.length) return say('Fandt ingen farver. Indsæt HEX-koder som #3d5afe.', true);
+    const seen = {}; d.colors.forEach((c) => { seen[c.name] = (seen[c.name] || 0) + 1; if (seen[c.name] > 1) c.name += '-' + seen[c.name]; });
+    d.colors.forEach((c) => { const s = document.createElement('div'); s.className = 'strip'; s.title = c.name;
+      c.steps.forEach(([, h]) => { const b = document.createElement('i'); b.style.background = h; s.appendChild(b); }); $('list').appendChild(s); });
+    say('Opretter ' + d.colors.length + ' farver …');
+    parent.postMessage({ pluginMessage: { type: 'create', name: d.name, colors: d.colors,
       opts: { vars: $('o-vars').checked, styles: $('o-styles').checked, board: $('o-board').checked } } }, '*');
-  });
-  onmessage = (e) => { const m = e.data && e.data.pluginMessage; if (!m) return; $('go').disabled = false; say(m.text, m.type === 'error'); };
+  }
+  let t; $('src').addEventListener('input', () => { clearTimeout(t); t = setTimeout(go, 350); });
+  onmessage = (e) => { const m = e.data && e.data.pluginMessage; if (m) say(m.text, m.type === 'error'); };
+  $('src').focus();
 </script>

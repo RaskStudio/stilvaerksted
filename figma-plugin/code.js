@@ -1,5 +1,5 @@
 // Stilværksted → Figma: opretter en palet med nuancer som variabler, farvestile og en oversigt på lærredet.
-figma.showUI(__html__, { width: 400, height: 620, themeColors: true });
+figma.showUI(__html__, { width: 360, height: 420, themeColors: true });
 
 const HEX = /^#[0-9a-f]{6}$/i;
 const rgb = (h) => ({
