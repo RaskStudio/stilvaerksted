@@ -123,11 +123,20 @@ a.pill{text-decoration:none}a.pill:hover{border-color:var(--muted)}
 .typ [contenteditable]{outline:0;border-radius:6px;cursor:text;white-space:pre-wrap}
 .typ [contenteditable]:hover{box-shadow:0 0 0 6px rgb(128 128 128 / .12)}
 .typ [contenteditable]:focus{box-shadow:0 0 0 6px rgb(128 128 128 / .12),0 0 0 7px currentColor}
-.tyg{display:grid;gap:26px}
-.tyg>*{min-width:0}
+.typ{display:flex;flex-direction:column;gap:30px}
+.tytop{display:flex;flex-wrap:wrap;gap:14px 28px;align-items:center}
+.tytop .btn{padding:13px 38px;font-size:16px}
+.tytop .ctl{flex:1 1 240px;max-width:460px}
 .tyrange{display:flex;justify-content:space-between}
-@media (min-width:900px){.tyg{grid-template-columns:330px 1fr;grid-template-areas:"a b" "c b";grid-template-rows:auto 1fr}.tya{grid-area:a}.tyb{grid-area:b}.tyc{grid-area:c}}
-.typ p{max-width:62ch}
+.tybar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px}
+.tybar select,.tybar input[type=text],.tybar .btn{padding:5px 9px;color:var(--ink)}
+.tybar .btn[aria-pressed="true"],.tybar .btn[aria-expanded="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tybar .tyf{flex:0 1 230px;min-width:0}
+.tybar .tyq{flex:0 1 180px}
+.tylab{font:700 12px/1.2 var(--body);letter-spacing:.08em;text-transform:uppercase;opacity:.7;flex:0 0 132px}
+.tyflt{display:contents}
+.tyflt[hidden]{display:none!important}
+@media (max-width:640px){.tylab{flex-basis:100%}.tybar .tyf{flex:1 1 150px}}
 .gprev{height:150px;border-radius:12px;box-shadow:inset 0 0 0 1px rgb(128 128 128 / .25)}
 .stops{display:flex;flex-wrap:wrap;gap:8px}
 .stop{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:4px 10px 4px 4px}
@@ -511,16 +520,16 @@ T.typografi={name:'Typografi',flt:{h:{c:'',q:''},u:{c:'',q:''},b:{c:'',q:''}},
   const H=Y.h.f;
   if(c<20)set('u',B,600);else if(c<45)set('u',H,500);else if(c<75)rnd(1)<.5?set('u',B,600):set('u',H,400);else set('u',pick(oppTxt,[B,H]),500);
   save()},
- build(s){const me=this;s.innerHTML=`<div class="tyg">
-  <div class="blk tya"><h2>Typografipar</h2><button class="btn pri" id="ty-gen" type="button" style="width:100%;padding:13px;font-size:16px">Generér</button>
-   <label class="ctl" style="margin-top:14px">Kontrast<input type="range" id="ty-con" min="0" max="100"><span class="tyrange"><span>Mere ens</span><span>Mere kontrast</span></span></label>
+ build(s){const me=this;s.innerHTML=`
+  <div class="blk"><h2>Typografipar</h2><div class="tytop"><button class="btn pri" id="ty-gen" type="button">Generér</button>
+   <label class="ctl">Kontrast<input type="range" id="ty-con" min="0" max="100"><span class="tyrange"><span>Mere ens</span><span>Mere kontrast</span></span></label></div>
    <p class="note">Mellemrumstasten genererer også. Låste skrifttyper bliver stående, og en skrifttype du selv vælger, låses automatisk.</p></div>
-  <div class="blk tyb"><div class="typ" id="ty-prev">${TROLES.map(([r,t])=>`<div id="ty-t-${r}" contenteditable="true" spellcheck="false" role="textbox" aria-label="${t}, eksempeltekst"></div>`).join('')}</div><p class="note">Tryk på teksten for at skrive din egen.</p></div>
-  <div class="tyc grp" style="gap:22px">${TROLES.map(([r,t])=>`<div class="blk"><h2>${t}</h2><div class="row">
-    <label class="ctl grow">Skrifttype<select id="ty-${r}-f"></select></label><label class="ctl">Vægt<select id="ty-${r}-w"></select></label><button class="btn" id="ty-${r}-l" type="button" aria-pressed="false">Lås</button></div>
-   <div class="row" style="margin-top:8px"><label class="ctl">Kategori<select id="ty-${r}-c">${TCATS.map(([v,n])=>`<option value="${v}">${n}</option>`).join('')}</select></label>
-    <label class="ctl grow">Søg<input type="text" id="ty-${r}-q" placeholder="f.eks. play" autocapitalize="off" spellcheck="false"></label>
-    <button class="btn" id="ty-${r}-p" type="button" aria-label="Forrige skrifttype">←</button><button class="btn" id="ty-${r}-n" type="button" aria-label="Næste skrifttype">→</button></div></div>`).join('')}</div></div>
+  <div class="blk"><div class="typ" id="ty-prev">${TROLES.map(([r,t])=>`<div><div class="tybar"><span class="tylab">${t}</span>
+     <select class="tyf" id="ty-${r}-f" aria-label="${t}, skrifttype"></select><select id="ty-${r}-w" aria-label="${t}, vægt"></select>
+     <button class="btn" id="ty-${r}-p" type="button" aria-label="Forrige skrifttype">←</button><button class="btn" id="ty-${r}-n" type="button" aria-label="Næste skrifttype">→</button>
+     <button class="btn" id="ty-${r}-l" type="button" aria-pressed="false">Lås</button><button class="btn" id="ty-${r}-x" type="button" aria-expanded="false">Filtrér</button>
+     <span class="tyflt" id="ty-${r}-flt" hidden><select id="ty-${r}-c" aria-label="${t}, kategori">${TCATS.map(([v,n])=>`<option value="${v}">${n==='Alle'?'Alle kategorier':n}</option>`).join('')}</select><input type="text" class="tyq" id="ty-${r}-q" placeholder="Søg, f.eks. play" autocapitalize="off" spellcheck="false" aria-label="${t}, søg"></span></div>
+    <div id="ty-t-${r}" contenteditable="true" spellcheck="false" role="textbox" aria-label="${t}, eksempeltekst"></div></div>`).join('')}</div><p class="note">Tryk på teksten for at skrive din egen. Pilene bladrer i listen, og Filtrér indsnævrer den til en kategori eller et søgeord.</p></div>
   <div class="blk"><h2>Størrelser</h2><div class="row">
     <label class="ctl grow">Grundstørrelse <output id="ty-base-o"></output><input type="range" id="ty-base" min="12" max="24"></label>
     <label class="ctl">Skala<select id="ty-ratio">${RATIOS.map(([v,n])=>`<option value="${v}">${n}</option>`).join('')}</select></label>
@@ -539,7 +548,8 @@ T.typografi={name:'Typografi',flt:{h:{c:'',q:''},u:{c:'',q:''},b:{c:'',q:''}},
   s.addEventListener('input',e=>{const m=e.target.id.match(/^ty-([hub])-([cqfw])$/),Y=S.type;
    if(m){const[,r,k]=m,v=e.target.value;if(k==='c'||k==='q'){me.flt[r][k]=v.trim().toLowerCase();me.fill(r)}else if(k==='f')me.setFam(r,v);else{Y[r].w=+v;save();me.out()}return}
    const id=e.target.id;if(id==='ty-con')Y.con=+e.target.value;else if(id==='ty-base')Y.base=+e.target.value;else if(id==='ty-ratio')Y.ratio=+e.target.value;else if(id==='ty-lhB')Y.lhB=+e.target.value;else if(id==='ty-lhH')Y.lhH=+e.target.value;else if(id==='ty-pal')Y.pal=e.target.checked;else return;save();me.out()});
-  s.addEventListener('click',e=>{const m=(e.target.id||'').match(/^ty-([hub])-([pnl])$/);if(!m)return;const[,r,k]=m;
+  s.addEventListener('click',e=>{const m=(e.target.id||'').match(/^ty-([hub])-([pnlx])$/);if(!m)return;const[,r,k]=m;
+   if(k==='x'){const p=$(`#ty-${r}-flt`);p.hidden=!p.hidden;e.target.setAttribute('aria-expanded',!p.hidden);if(!p.hidden)$(`#ty-${r}-q`).focus();return}
    if(k==='l'){S.type[r].lock=!S.type[r].lock;save();return me.out()}
    const l=me.list(r);if(!l.length)return toast('Ingen skrifttyper matcher søgningen');
    let i=l.findIndex(x=>x.f===S.type[r].f);i=i<0?0:(i+(k==='n'?1:-1)+l.length)%l.length;me.setFam(r,l[i].f);me.fill(r)});
@@ -557,7 +567,7 @@ T.typografi={name:'Typografi',flt:{h:{c:'',q:''},u:{c:'',q:''},b:{c:'',q:''}},
   let bg='var(--surface)',tx='var(--ink)';
   if(Y.pal){const L=S.palette.map(p=>p.hex).sort((x,y)=>lum(y)-lum(x));bg=L[0];tx=on(bg,L[L.length-1])}
   const pv=$('#ty-prev');pv.style.background=bg;pv.style.color=tx;
-  [['h',H,`min(${px(sz.h1)},15vw)`,Y.lhH,'0'],['u',U,`min(${px(sz.h3)},9vw)`,Math.max(Y.lhH,1.2),'.5em'],['b',B,px(b),Y.lhB,'1.1em']].forEach(([r,fam,size,lh,mt])=>{const e=$('#ty-t-'+r);
+  [['h',H,`min(${px(sz.h1)},15vw)`,Y.lhH,'0'],['u',U,`min(${px(sz.h3)},9vw)`,Math.max(Y.lhH,1.2),'0'],['b',B,px(b),Y.lhB,'0']].forEach(([r,fam,size,lh,mt])=>{const e=$('#ty-t-'+r);
    e.style.cssText=`font-family:${stack(fam)};font-weight:${Y[r].w};font-size:${size};line-height:${lh};margin-top:${mt};max-width:${r==='b'?'62ch':'none'}`;
    if(document.activeElement!==e)e.textContent=Y.t[r]||TTXT[r];
    const lb=$(`#ty-${r}-l`);lb.setAttribute('aria-pressed',Y[r].lock);lb.textContent=Y[r].lock?'Låst':'Lås'});
