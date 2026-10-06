@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<style>:root{color-scheme:light;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Farveværksted</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: neutral, kølig værktøjsramme hvor den valgte farve er det eneste kulørte; sticky top med farvefelt + faner, én kolonne indhold. */
+:root{
+  --bg:#f1f2f5; --surface:#ffffff; --sunk:#e7e9ee; --ink:#15171c; --muted:#5b6170; --line:#d9dce3; --ok:#177245; --bad:#b3261e;
+  --cur:#3d5afe; --cur-ink:#ffffff;
+  --display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#111216; --surface:#1a1c22; --sunk:#23262e; --ink:#eceef3; --muted:#9aa1ae; --line:#2d313a; --ok:#5fd39a; --bad:#ff8a80; color-scheme:dark } }
+:root[data-theme="dark"]{ --bg:#111216; --surface:#1a1c22; --sunk:#23262e; --ink:#eceef3; --muted:#9aa1ae; --line:#2d313a; --ok:#5fd39a; --bad:#ff8a80; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.5 var(--body)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.top-in,.main{max-width:1120px;margin:0 auto;padding-inline:16px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding-block:10px}
+.brand{font:700 20px/1 var(--display);letter-spacing:-.01em;margin-right:auto}
+.cur{display:flex;align-items:center;gap:8px;flex:1 1 260px;min-width:0}
+.chip{position:relative;flex:none;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);overflow:hidden;cursor:pointer;display:block}
+.chip input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+input[type=text],input[type=number],select,textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:16px;min-width:0}
+.cur input[type=text]{flex:1;font-family:var(--mono)}
+textarea{width:100%;min-height:120px;font:400 13px/1.5 var(--mono);resize:vertical}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.pri{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.sm{padding:5px 9px;font-size:13px}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding-inline:16px}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none;background:none;border:0;border-bottom:3px solid transparent;padding:8px 10px 9px;cursor:pointer;color:var(--muted);font-weight:500}
+.tabs button[aria-current="page"]{color:var(--ink);border-bottom-color:var(--cur)}
+
+.main{padding-block:20px 96px}
+section.tool{display:flex;flex-direction:column;gap:26px}
+h2{font:700 13px/1.2 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.blk{min-width:0}
+.note{color:var(--muted);font-size:13px;margin:6px 0 0;max-width:65ch}
+.row{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:end}
+.ctl{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);min-width:0}
+.ctl output{color:var(--ink);font-family:var(--mono)}
+.ctl.grow{flex:1 1 180px}
+input[type=range]{width:100%;accent-color:var(--ink);margin:0;height:28px}
+
+.hero{background:var(--cur);color:var(--cur-ink);border-radius:14px;padding:22px 20px;display:flex;flex-wrap:wrap;gap:14px;align-items:end;justify-content:space-between;min-height:170px}
+.hero h1{font:700 clamp(30px,7vw,54px)/1 var(--display);letter-spacing:-.02em;margin:0;text-wrap:balance;text-transform:capitalize}
+.hero .hx{font:500 18px/1.2 var(--mono);margin-top:8px}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font:500 12px/1 var(--mono);padding:7px 9px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.pill.ok{color:var(--ok)} .pill.bad{color:var(--bad)}
+
+.fmt{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:6px}
+.fmt button{display:flex;gap:10px;align-items:baseline;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 11px;cursor:pointer;min-width:0}
+.fmt b{font:600 11px/1 var(--body);letter-spacing:.08em;color:var(--muted);width:52px;flex:none}
+.fmt span{font:400 13px/1.3 var(--mono);overflow-wrap:anywhere;min-width:0}
+
+.sws{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:5px}
+.sw{height:62px;border:0;border-radius:8px;cursor:pointer;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;padding:6px 7px;font:500 11px/1.25 var(--mono);text-align:left;min-width:0;box-shadow:inset 0 0 0 1px rgb(128 128 128 / .25)}
+.sw small{font:400 10px/1.2 var(--body);opacity:.8}
+.sw.big{height:120px;font-size:14px}
+.grp{display:flex;flex-direction:column;gap:14px}
+.grp h3{font:600 14px/1.2 var(--body);margin:0 0 6px}
+
+.field{display:flex;flex-direction:column;gap:4px;flex:1 1 240px;min-width:0}
+.field .lbl{font-size:13px;color:var(--muted)}
+.frow{display:flex;gap:8px;align-items:center}
+.frow input[type=text]{flex:1;width:100%}
+
+.sv{position:relative;height:220px;border-radius:12px;touch-action:none;cursor:crosshair;box-shadow:inset 0 0 0 1px rgb(128 128 128 / .25)}
+.mk{position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #000;pointer-events:none}
+.mk.main{width:26px;height:26px;margin:-13px 0 0 -13px}
+#pk-hue{height:28px;-webkit-appearance:none;appearance:none;border-radius:99px;background:linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+.sl{display:grid;grid-template-columns:18px 1fr 44px;gap:10px;align-items:center;font:500 13px/1 var(--mono)}
+.sl output{text-align:right}
+
+.wheel{position:relative;width:min(100%,340px);aspect-ratio:1;max-width:100%;margin-inline:auto;touch-action:none;cursor:crosshair}
+.wheel canvas{width:100%;height:100%;border-radius:50%;display:block}
+
+.pbars{display:flex;flex-direction:column;border-radius:12px;overflow:hidden;box-shadow:inset 0 0 0 1px rgb(128 128 128 / .25)}
+.pbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;min-width:0;flex:1}
+.pbar label{position:relative;font:500 14px/1 var(--mono);cursor:pointer;padding:8px 0}
+.pbar label input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.pact{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
+.pact button{background:none;border:1px solid currentColor;border-radius:6px;padding:4px 7px;font-size:12px;cursor:pointer;color:inherit;opacity:.85}
+.pact button[aria-pressed="true"]{background:currentColor}
+.pact button[aria-pressed="true"] span{filter:invert(1)}
+@media (min-width:760px){
+  .pbars{flex-direction:row;height:300px}
+  .pbar{flex-direction:column-reverse;justify-content:flex-start;align-items:flex-start;padding:14px 10px}
+  .pact{flex-direction:column;justify-content:flex-start;margin-bottom:auto}
+}
+.vrow{display:grid;grid-template-columns:110px 1fr auto;gap:10px;align-items:center;font-size:13px}
+.strip{display:flex;height:34px;border-radius:8px;overflow:hidden;min-width:0;box-shadow:inset 0 0 0 1px rgb(128 128 128 / .25)}
+.strip i{flex:1}
+
+.mocks{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+.mock{min-width:0}
+.mock h3{font:600 13px/1.2 var(--body);color:var(--muted);margin:0 0 6px}
+.fr{height:300px;border-radius:12px;overflow:hidden;outline:1px solid rgb(128 128 128 / .25);outline-offset:-1px;font-size:11px;line-height:1.35}
+.fr svg{width:100%;height:100%;display:block}
+.fr b,.fr .hd{font-family:var(--display);font-weight:700}
+.fr .bt{display:inline-block;border-radius:99px;padding:6px 12px;font-weight:600}
+.ph{width:150px;height:270px;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;font-size:10px;box-shadow:0 10px 24px rgb(0 0 0 / .25)}
+.gprev{height:150px;border-radius:12px;box-shadow:inset 0 0 0 1px rgb(128 128 128 / .25)}
+.stops{display:flex;flex-wrap:wrap;gap:8px}
+.stop{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:4px 10px 4px 4px}
+.stop .chip{width:30px;height:30px}
+.stop span{font:500 13px/1 var(--mono)}
+.x{background:none;border:0;cursor:pointer;color:var(--muted);font-size:18px;line-height:1;padding:2px 4px}
+
+.cprev{border-radius:12px;padding:22px 20px;box-shadow:inset 0 0 0 1px rgb(128 128 128 / .25)}
+.cprev .l{font:700 28px/1.15 var(--display);margin:0 0 8px}
+.cprev .s{margin:0;max-width:60ch}
+.ratio{font:700 clamp(40px,10vw,64px)/1 var(--display);font-variant-numeric:tabular-nums}
+.duo{display:grid;grid-template-columns:1fr 1fr;border-radius:12px;overflow:hidden;min-height:150px;box-shadow:inset 0 0 0 1px rgb(128 128 128 / .25)}
+.duo div{padding:14px;display:flex;align-items:flex-end;font:500 14px/1 var(--mono)}
+.tblw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font:400 13px/1.4 var(--mono)}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font:600 11px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+.imgw{position:relative;border-radius:12px;overflow:hidden;background:var(--sunk);line-height:0}
+.imgw canvas{width:100%;height:auto;max-width:100%;cursor:crosshair;display:block}
+.loupe{display:flex;align-items:center;gap:10px;font:500 14px/1 var(--mono)}
+.loupe i{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);flex:none}
+
+.saved{position:relative}
+.saved .x{position:absolute;top:2px;right:2px;color:inherit;mix-blend-mode:difference;color:#fff}
+.pal{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.pal header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.pal b{font-weight:600}
+.empty{color:var(--muted);border:1px dashed var(--line);border-radius:12px;padding:18px;margin:0}
+
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:9;background:var(--ink);color:var(--bg);border-radius:12px;padding:9px 9px 9px 14px;display:flex;align-items:center;gap:10px;max-width:calc(100% - 32px);box-shadow:0 8px 30px rgb(0 0 0 / .3)}
+#toast span{font:500 13px/1.3 var(--mono);overflow-wrap:anywhere;user-select:all;-webkit-user-select:all;min-width:0}
+#toast button{background:var(--bg);color:var(--ink);border:0;border-radius:8px;padding:7px 10px;font-weight:600;cursor:pointer;white-space:nowrap}
+@media (prefers-reduced-motion:no-preference){ .sw{transition:transform .12s} .sw:active{transform:scale(.96)} }
+</style>
+
+</head>
+<body>
+<div class="top"><div class="top-in">
+  <div class="bar">
+    <div class="brand">Farveværksted</div>
+    <div class="cur">
+      <label class="chip" id="cur-chip"><input type="color" id="cur-c" aria-label="Vælg farve"></label>
+      <input type="text" id="cur-t" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Farve som HEX, RGB, HSL, CMYK, Pantone eller navn" placeholder="#3d5afe, rgb(…), cmyk(…), pms 286">
+      <button class="btn" id="cur-rnd" type="button">Tilfældig</button>
+      <button class="btn" id="cur-save" type="button" aria-pressed="false">Gem</button>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs" aria-label="Værktøjer"></nav>
+</div></div>
+<main class="main" id="main"></main>
+<div id="toast" hidden role="status"><span id="toast-t"></span><button type="button" id="toast-use">Brug som farve</button></div>
+
+<script>
+/* ---------- farvematematik ---------- */
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const R=Math.round;
+function hexToRgb(h){h=h.replace('#','');if(h.length===3)h=[...h].map(c=>c+c).join('');const n=parseInt(h,16);return[n>>16&255,n>>8&255,n&255]}
+function rgbToHex(r){return'#'+r.map(v=>R(clamp(v,0,255)).toString(16).padStart(2,'0')).join('')}
+function hueOf(r,g,b,mx,d){let h=mx===r?((g-b)/d)%6:mx===g?(b-r)/d+2:(r-g)/d+4;return(h*60+360)%360}
+function sect(h,c,x){return h<60?[c,x,0]:h<120?[x,c,0]:h<180?[0,c,x]:h<240?[0,x,c]:h<300?[x,0,c]:[c,0,x]}
+function rgbToHsl([r,g,b]){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn,l=(mx+mn)/2;let h=0,s=0;if(d){s=d/(1-Math.abs(2*l-1));h=hueOf(r,g,b,mx,d)}return[h,s*100,l*100]}
+function hslToRgb([h,s,l]){h=((h%360)+360)%360;s=clamp(s,0,100)/100;l=clamp(l,0,100)/100;const c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs((h/60)%2-1)),m=l-c/2;return sect(h,c,x).map(v=>(v+m)*255)}
+function rgbToHsv([r,g,b]){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;return[d?hueOf(r,g,b,mx,d):0,mx?d/mx*100:0,mx*100]}
+function hsvToRgb([h,s,v]){h=((h%360)+360)%360;s=clamp(s,0,100)/100;v=clamp(v,0,100)/100;const c=v*s,x=c*(1-Math.abs((h/60)%2-1)),m=v-c;return sect(h,c,x).map(k=>(k+m)*255)}
+function rgbToCmyk([r,g,b]){const k=1-Math.max(r,g,b)/255;if(k>=1)return[0,0,0,100];return[(1-r/255-k)/(1-k),(1-g/255-k)/(1-k),(1-b/255-k)/(1-k),k].map(v=>v*100)}
+function cmykToRgb([c,m,y,k]){return[c,m,y].map(v=>255*(1-clamp(v,0,100)/100)*(1-clamp(k,0,100)/100))}
+const lin=c=>{c/=255;return c<=.04045?c/12.92:((c+.055)/1.055)**2.4};
+const delin=c=>255*(c<=.0031308?12.92*c:1.055*Math.max(c,0)**(1/2.4)-.055);
+function rgbToLab(rgb){const[r,g,b]=rgb.map(lin);const X=(.4124564*r+.3575761*g+.1804375*b)/.95047,Y=.2126729*r+.7151522*g+.072175*b,Z=(.0193339*r+.119192*g+.9503041*b)/1.08883;const f=t=>t>.008856?Math.cbrt(t):7.787*t+16/116;const fx=f(X),fy=f(Y),fz=f(Z);return[116*fy-16,500*(fx-fy),200*(fy-fz)]}
+function labToRgb([L,a,b]){const fy=(L+16)/116,fx=a/500+fy,fz=fy-b/200;const g=t=>t**3>.008856?t**3:(t-16/116)/7.787;const X=g(fx)*.95047,Y=g(fy),Z=g(fz)*1.08883;return[3.2404542*X-1.5371385*Y-.4985314*Z,-.969266*X+1.8760108*Y+.041556*Z,.0556434*X-.2040259*Y+1.0572252*Z].map(delin)}
+function rgbToOklab(rgb){const[r,g,b]=rgb.map(lin);const l=Math.cbrt(.4122214708*r+.5363325363*g+.0514459929*b),m=Math.cbrt(.2119034982*r+.6806995451*g+.1073969566*b),s=Math.cbrt(.0883024619*r+.2817188376*g+.6299787005*b);return[.2104542553*l+.793617785*m-.0040720468*s,1.9779984951*l-2.428592205*m+.4505937099*s,.0259040371*l+.7827717662*m-.808675766*s]}
+function oklabToRgb([L,a,b]){const l=(L+.3963377774*a+.2158037573*b)**3,m=(L-.1055613458*a-.0638541728*b)**3,s=(L-.0894841775*a-1.291485548*b)**3;return[4.0767416621*l-3.3077115913*m+.2309699292*s,-1.2684380046*l+2.6097574011*m-.3413193965*s,-.0041960863*l-.7034186147*m+1.707614701*s].map(delin)}
+const toLch=([L,a,b])=>[L,Math.hypot(a,b),(Math.atan2(b,a)*180/Math.PI+360)%360];
+const fromLch=([L,C,H])=>[L,C*Math.cos(H*Math.PI/180),C*Math.sin(H*Math.PI/180)];
+const SP={
+  rgb:{to:r=>r,from:r=>r},
+  hsl:{to:rgbToHsl,from:hslToRgb,hue:0,chroma:1,eps:.5},
+  lab:{to:rgbToLab,from:labToRgb},
+  lch:{to:r=>toLch(rgbToLab(r)),from:c=>labToRgb(fromLch(c)),hue:2,chroma:1,eps:.5},
+  oklab:{to:rgbToOklab,from:oklabToRgb},
+  oklch:{to:r=>toLch(rgbToOklab(r)),from:c=>oklabToRgb(fromLch(c)),hue:2,chroma:1,eps:.003}
+};
+function mix(a,b,t,sp='rgb'){const s=SP[sp],x=s.to(hexToRgb(a)).slice(),y=s.to(hexToRgb(b)).slice();
+  if(s.hue!=null){if(x[s.chroma]<s.eps)x[s.hue]=y[s.hue];else if(y[s.chroma]<s.eps)y[s.hue]=x[s.hue]}
+  return rgbToHex(s.from(x.map((v,i)=>{if(i===s.hue){const d=((y[i]-v+540)%360)-180;return(v+d*t+360)%360}return v+(y[i]-v)*t})))}
+function scale(stops,n,sp){const o=[];for(let i=0;i<n;i++){const p=n===1?0:i/(n-1)*(stops.length-1),k=Math.min(Math.floor(p),stops.length-2);o.push(mix(stops[k],stops[k+1],p-k,sp))}return o}
+function lum(hex){const[r,g,b]=hexToRgb(hex).map(lin);return .2126*r+.7152*g+.0722*b}
+function contrast(a,b){const x=lum(a),y=lum(b);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05)}
+const ink=hex=>contrast(hex,'#ffffff')>=contrast(hex,'#111111')?'#ffffff':'#111111';
+const rot=(hex,deg)=>{const[h,s,l]=rgbToHsl(hexToRgb(hex));return rgbToHex(hslToRgb([h+deg,s,l]))};
+const adj=(hex,ds,dl)=>{const[h,s,l]=rgbToHsl(hexToRgb(hex));return rgbToHex(hslToRgb([h,clamp(s+ds,0,100),clamp(l+dl,0,100)]))};
+const dE76=(a,b)=>{const x=rgbToLab(hexToRgb(a)),y=rgbToLab(hexToRgb(b));return Math.hypot(x[0]-y[0],x[1]-y[1],x[2]-y[2])};
+const dEok=(a,b)=>{const x=rgbToOklab(hexToRgb(a)),y=rgbToOklab(hexToRgb(b));return Math.hypot(x[0]-y[0],x[1]-y[1],x[2]-y[2])};
+const CVD=[['Protanopi (rød-svag)',[.567,.433,0,.558,.442,0,0,.242,.758]],['Deuteranopi (grøn-svag)',[.625,.375,0,.7,.3,0,0,.3,.7]],['Tritanopi (blå-svag)',[.95,.05,0,0,.433,.567,0,.475,.525]],['Akromatopsi (gråtoner)',[.299,.587,.114,.299,.587,.114,.299,.587,.114]]];
+const sim=(hex,m)=>{const[r,g,b]=hexToRgb(hex);return rgbToHex([m[0]*r+m[1]*g+m[2]*b,m[3]*r+m[4]*g+m[5]*b,m[6]*r+m[7]*g+m[8]*b])};
+const HARM=[['Komplementær',[0,180]],['Splitkomplementær',[0,150,210]],['Analog',[-30,0,30]],['Triadisk',[0,120,240]],['Tetradisk',[0,60,180,240]],['Kvadratisk',[0,90,180,270]]];
+function fmt(hex,kind){const r=hexToRgb(hex);
+  if(kind==='rgb')return`rgb(${r.join(', ')})`;
+  if(kind==='hsl'){const[h,s,l]=rgbToHsl(r);return`hsl(${R(h)}, ${R(s)}%, ${R(l)}%)`}
+  if(kind==='hsv'){const[h,s,v]=rgbToHsv(r);return`hsv(${R(h)}, ${R(s)}%, ${R(v)}%)`}
+  if(kind==='cmyk')return`cmyk(${rgbToCmyk(r).map(v=>R(v)+'%').join(', ')})`;
+  if(kind==='pantone')return'PANTONE '+nearestPms(hex)[0].name+' C';
+  if(kind==='lab'){const c=rgbToLab(r);return`lab(${c.map(v=>v.toFixed(1)).join(' ')})`}
+  if(kind==='lch'){const c=toLch(rgbToLab(r));return`lch(${c.map(v=>v.toFixed(1)).join(' ')})`}
+  if(kind==='oklab'){const c=rgbToOklab(r);return`oklab(${c.map(v=>v.toFixed(3)).join(' ')})`}
+  if(kind==='oklch'){const c=toLch(rgbToOklab(r));return`oklch(${(c[0]*100).toFixed(1)}% ${c[1].toFixed(3)} ${c[2].toFixed(1)})`}
+  return hex.toUpperCase()}
+const PMS='100:f4ed7c,101:f4ed47,102:f9e814,103:c6ad0f,104:ad9b0c,105:82750f,106:f7e859,107:f9e526,108:f9dd16,109:f9d616,110:d8b511,111:aa930a,112:99840a,113:f9e55b,114:f9e24c,115:f9e04c,116:fcd116,117:c6a00c,118:aa8e0a,119:897719,120:f9e27f,121:f9e070,122:fcd856,123:ffc61e,124:e0aa0f,125:b58c0a,126:a38205,127:f4e287,128:f4db60,129:f2d13d,130:eaaf0f,131:c6930a,132:9e7c0a,133:705b0a,134:ffd87f,135:fcc963,136:fcbf49,137:fca311,138:d88c02,139:af7505,140:7a5b11,141:f2ce68,142:f2bf49,143:efb22d,144:e28c05,145:c67f07,146:9e6b05,147:725e26,148:ffd69b,149:fccc93,150:fcad56,151:f77f00,152:dd7500,153:bc6d0a,154:995905,155:f4dbaa,156:f2c68c,157:eda04f,158:e87511,159:c66005,160:9e540a,161:633a11,162:f9c6aa,163:fc9e70,164:fc7f3f,165:f96302,166:dd5900,167:bc4f07,168:6d3011,169:f9baaa,170:f98972,171:f9603a,172:f74902,173:d14414,174:933311,175:6d3321,176:f9afad,177:f9827f,178:f95e59,179:e23d28,180:c13828,181:7c2d23,182:f9bfc1,183:fc8c99,184:fc5e72,185:e8112d,186:ce1126,187:af1e2d,188:7c2128,189:ffa3b2,190:fc758e,191:f4476b,192:e5053a,193:db828c,194:992135,196:f4c9c9,197:ef99a3,198:772d35,199:d81c3f,200:c41e3a,201:a32638,202:8c2633,203:f2afc1,204:ed7a9e,205:e54c7c,206:d30547,207:baaa9e,208:8e2344,209:75263d,210:ffa0bf,211:ff77a8,212:f94f8e,213:ea0f6b,214:cc0256,215:a50544,216:7c1e3f,217:f4bfd1,218:ed72aa,219:e22882,220:aa004f,221:930042,222:70193d,223:f993c4,224:f46baf,225:ed2893,226:d60270,227:ad005b,228:8c004c,229:6d213f,230:ffa0cc,231:fc70ba,232:f43fa5,233:ce007c,234:aa0066,235:8e0554,236:f9afd3,237:f484c4,238:ed4faf,239:e0219e,240:c40f89,241:ad0075,242:7c1c51,243:f2bad8,244:eda0d3,245:e87fc9,246:cc00a0,247:b7008e,248:a3057f,249:7f2860,250:edc4dd,251:e29ed6,252:d36bc6,253:af23a5,254:a02d96,255:772d6b,256:e5c4d6,257:d3a5c9,258:9b4f96,259:72166b,260:681e5b,261:5e2154,262:542344,263:e0cee0,264:c6aadb,265:9663c4,266:6d28aa,267:59118e,268:4f2170,269:442359,270:baafd3,271:9e91c6,272:8977ba,273:38197a,274:2b1166,275:260f54,276:2b2147,277:b5d1e8,278:99badd,279:6689cc,280:002b7f,281:002868,282:002654,283:9bc4e2,284:75aadb,285:3a75c4,286:0038a8,287:003893,288:00337f,289:002649,290:c4d8e2,291:a8cee2,292:75b2dd,293:0051ba,294:003f87,295:00386b,296:002d47,297:82c6e2,298:51b5e0,299:00a3dd,300:0072c6,301:005b99,302:004f6d,303:003f54,304:a5dde2,305:70cee2,306:00bce2,307:007aa5,308:00607c,309:003f49,310:72d1dd,311:28c4d8,312:00adc6,313:0099b5,314:00829b,315:006b77,316:00494f,317:c9e8dd,318:93dddb,319:4cced1,320:009ea0,321:008789,322:007272,323:006663,324:aaddd6,325:56c9c1,326:00b2aa,327:008c82,328:007770,329:006d66,330:005951,331:baead6,332:a0e5ce,333:5eddc1,334:00997c,335:007c66,336:006854,337:9bdbc1,338:7ad1b5,339:00b28c,340:009977,341:007a5e,342:006b54,343:00563f,344:b5e2bf,345:96d8af,346:70ce9b,347:009e60,348:008751,349:006b3f,350:234f33,351:b5e8bf,352:99e5b2,353:84e2a8,354:00b760,355:009e49,356:007a3d,357:215b33,358:aadd96,359:a0db8e,360:60c659,361:1eb53a,362:339e35,363:3d8e33,364:3a7728,365:d3e8a3,366:c4e58e,367:aadd6d,368:5bbf21,369:56aa1c,370:568e14,371:566b21,372:d8ed96,373:ceea82,374:bae860,375:8cd600,376:7fba00,377:709302,378:566314,379:e0ea68,380:d6e542,381:cce226,382:bad80a,383:a3af07,384:939905,385:707014,386:e8ed60,387:e0ed44,388:d6e80f,389:cee007,390:bac405,391:9e9e07,392:848205,393:f2ef87,394:eaed35,395:e5e811,396:e0e20c,397:c1bf0a,398:afa80a,399:998e07,400:d1c6b5,401:c1b5a5,402:afa593,403:998c7c,404:827566,405:6b5e4f,406:cec1b5,408:a8998c,409:99897c,410:7c6d63,411:66594c,412:3d3028,413:c6c1b2,414:b5afa0,415:a39e8c,416:8e8c7a,417:777263,418:605e4f,419:282821,420:d1ccbf,421:bfbaaf,422:afaaa3,423:96938e,424:827f77,425:60605b,426:2b2b28,427:dddbd1,428:d1cec6,429:adafaa,430:919693,431:666d70,432:444f51,433:30383a,434:e0d1c6,435:d3bfb7,436:bca59e,437:8c706b,438:593f3d,439:493533,440:3f302b,441:d1d1c6,442:babfb7,443:a3a8a3,444:898e8c,445:565959,446:494c49,447:3f3f38,448:54472d,449:544726,450:60542b,451:ada07a,452:c4b796,453:d6ccaf,454:e2d8bf,455:665614,456:998714,457:b59b0c,458:ddcc6b,459:e2d67c,460:eadd96,461:ede5ad,462:5b4723,463:755426,464:876028,465:c1a875,466:d1bf91,467:ddcca5,468:e2d6b5,469:603311,470:9b4f19,471:bc5e1e,472:eaaa7a,473:f4c4a0,474:f4ccaa,475:f7d3b5,476:593d2b,477:633826,478:7a3f28,479:af8970,480:d3b7a3,481:e0ccba,482:e5d3c1,483:6b3021,484:9b301c,485:d81e05,486:ed9e84,487:efb5a0,488:f2c4af,489:f2d1bf,490:5b2626,491:752828,492:913338,494:f2adb2,495:f4bcbf,496:f7c9c6,497:512826,498:6d332b,499:7a382d,500:ce898c,501:eab2b2,502:f2c6c4,503:f4d1cc,504:511e26,505:661e2b,506:7a2638,507:d8899b,508:e8a5af,509:f2babf,510:f4c6c9,511:602144,512:84216b,513:9e2387,514:d884bc,515:e8a3c9,516:f2bad3,517:f4ccd8,518:512d44,519:63305e,520:703572,521:b58cb2,522:c6a3c1,523:d3b7cc,524:e2ccd3,525:512654,526:68217a,527:7a1e99,528:af72c1,529:cea3d3,530:d6afd6,531:e5c6db,532:353842,533:353f5b,534:3a4972,535:9ba3b7,536:adb2c1,537:c4c6ce,538:d6d3d6,539:003049,540:00335b,541:003f77,542:6693bc,543:93b7d1,544:b7ccdb,545:c4d3dd,546:0c3844,547:003f54,548:004459,549:5e99aa,550:87afbf,551:a3c1c9,552:c4d6d6,553:234435,554:195e47,555:076d54,556:7aa891,557:a3c1ad,558:b7cebc,559:c6d6c4,560:2b4c3f,561:266659,562:1e7a6d,563:7fbcaa,564:05705e,565:bcdbcc,566:d1e2d3,567:265142,569:008772,570:7fc6b2,571:aadbc6,572:bce2ce,573:cce5d6,574:495928,575:547730,576:608e3a,577:b5cc8e,578:c6d6a0,579:c9d6a3,580:d8ddb5,581:605e11,582:878905,583:aaba0a,584:ced649,585:dbe06b,586:e2e584,587:e8e89b,600:f4edaf,601:f2ed9e,602:f2ea87,603:ede85b,604:e8dd21,605:ddce11,606:d3bf11,607:f2eabc,608:efe8ad,609:eae596,610:e2db72,611:d6ce49,612:c4ba00,613:afa00c,614:eae2b7,615:e2dbaa,616:ddd69b,617:ccc47c,618:b5aa59,619:968c28,620:847711,621:d8ddce,622:c1d1bf,623:a5bfaa,624:7fa08c,625:5b8772,626:21543f,627:0c3026,628:cce2dd,629:b2d8d8,630:8cccd3,631:54b7c6,632:00a0ba,633:007f99,634:00667f,635:bae0e0,636:99d6dd,637:6bc9db,638:00b5d6,639:00a0c4,640:008cb2,641:007aa5,642:d1d8d8,643:c6d1d6,644:9bafc4,645:7796b2,646:5e82a3,647:26547c,648:00305e,649:d6d6d8,650:bfc6d1,651:9baabf,652:6d87a8,653:335687,654:0f2b5b,655:0c1c47,656:d6dbe0,657:c1c9dd,658:a5afd6,659:7f8cbf,660:5960a8,661:2d338e,662:0c1975,663:e2d3d6,664:d8ccd1,665:c6b5c4,666:a893ad,667:7f6689,668:664975,669:472b59,670:f2d6d8,671:efc6d3,672:eaaac4,673:e08cb2,674:d36b9e,675:bc3877,676:a00054,677:edd6d6,678:eaccce,679:e5bfc6,680:d39eaf,681:b7728e,682:a05175,683:7f284f,684:efccce,685:eabfc4,686:e0aaba,687:c9899e,688:b26684,689:934266,690:702342,691:efd1c9,692:e8bfba,693:dba8a5,694:c98c8c,695:b26b70,696:8e4749,697:7f383a,698:f7d1cc,699:f7bfbf,700:f2a5aa,701:e8878e,702:d6606d,703:b73844,704:9e2828,705:f9ddd6,706:fcc9c6,707:fcadaf,708:f98e99,709:f26877,710:e04251,711:d12d33,712:ffd3aa,713:f9c9a3,714:f9ba82,715:fc9e49,716:f28411,717:d36d00,718:bf5b00,719:f4d1af,720:efc49e,721:e8b282,722:d18e54,723:ba7530,724:8e4905,725:753802,726:edd3b5,727:e2bf9b,728:d3a87c,729:c18e60,730:aa753f,731:723f0a,732:60330a,801:00aacc,802:60dd49,803:ffed38,804:ff9338,805:f95951,806:ff0093,807:d6009e,808:00b59b,809:dde00f,810:ffcc1e,811:ff7247,812:fc2366,813:e50099,814:8c60c1,1205:f7e8aa,1215:f9e08c,1225:ffcc49,1235:fcb514,1245:bf910c,1255:a37f14,1265:7c6316,1345:ffd691,1355:fcce87,1365:fcba5e,1375:f99b0c,1385:cc7a02,1395:996007,1405:6b4714,1485:ffb777,1495:ff993f,1505:f47c00,1525:b55400,1535:8c4400,1545:4c280f,1555:f9bf9e,1565:fca577,1575:fc8744,1585:f96b07,1595:d15b05,1605:a04f11,1615:843f0f,1625:f9a58c,1635:f98e6d,1645:f97242,1655:f95602,1665:dd4f05,1675:a53f0f,1685:843511,1765:f99ea3,1767:f9b2b7,1775:f9848e,1777:fc6675,1785:fc4f59,1787:f43f4f,1788:ef2b2d,1795:d62828,1797:cc2d30,1805:af2626,1807:a03033,1810:7c211e,1817:5b2d28,1895:fcbfc9,1905:fc9bb2,1915:f4547c,1925:e00747,1935:c10538,1945:a80c35,1955:931638,2365:f7c4d8,2375:ea6bbf,2385:db28a5,2395:c4008c,2405:a8007a,2415:9b0070,2425:87005b,2562:d8a8d8,2563:d1a0cc,2567:bf93cc,2572:c687d1,2573:ba7cbc,2577:aa72bf,2582:aa47ba,2583:9e4fa5,2587:8e47ad,2592:930fa5,2593:872b93,2597:66008c,2602:820c8e,2603:70147a,2607:5b027a,2612:701e72,2613:66116d,2617:560c70,2622:602d59,2623:5b195e,2627:4c145e,2635:c9add8,2645:b591d1,2655:9b6dc6,2665:894fbf,2685:56008c,2695:44235e,2705:ad9ed3,2706:d1cedd,2707:bfd1e5,2708:afbcdb,2715:937acc,2716:a5a0d6,2717:a5bae0,2718:5b77cc,2725:7251bc,2726:6656bc,2727:5e68c4,2728:3044b5,2735:4f0093,2736:4930ad,2738:2d008e,2745:3f0077,2746:3f2893,2747:1c146b,2748:1e1c77,2755:35006d,2756:332875,2757:141654,2758:192168,2765:2b0c56,2766:2b265b,2767:14213d,2768:112151,2905:93c6e0,2915:60afdd,2925:008ed6,2935:005bbf,2945:0054a0,2955:003d6b,2965:00334c,2975:bae0e2,2985:51bfe2,2995:00a5db,3005:0084c9,3015:00709e,3025:00546b,3035:004454,3105:7fd6db,3115:2dc6d6,3125:00b7c6,3135:009baa,3145:00848e,3155:006d75,3165:00565b,3242:87ddd1,3245:8ce0d1,3248:7ad3c1,3252:56d6c9,3255:47d6c1,3258:35c4af,3262:00c1b5,3265:00c6b2,3268:00af99,3272:00aa9e,3275:00b2a0,3278:009b84,3282:008c82,3285:009987,3288:008270,3292:006056,3295:008272,3298:006b5b,3302:00493f,3305:004f42,3308:004438,3375:8ee2bc,3385:54d8a8,3395:00c993,3405:00b27a,3415:007c59,3425:006847,3435:024930,3935:f2ed6d,3945:efea07,3955:ede211,3965:e8dd11,3975:b5a80c,3985:998c0a,3995:6d6002,4485:604c11,4495:877530,4505:a09151,4515:bcad75,4525:ccbf8e,4535:dbcea5,4545:e5dbba,4625:472311,4635:8c5933,4645:b28260,4655:c49977,4665:d8b596,4675:e5c6aa,4685:edd3bc,4695:51261c,4705:7c513d,4715:99705b,4725:b5917c,4735:ccaf9b,4745:d8bfaa,4755:e2ccba,4975:441e1c,4985:844949,4995:a56b6d,5005:bc8787,5015:d8ada8,5025:e2bcb7,5035:edcec6,5115:4f213a,5125:754760,5135:936b7f,5145:ad8799,5155:ccafb7,5165:e0c9cc,5175:e8d6d1,5185:472835,5195:593344,5205:8e6877,5215:b5939b,5225:ccadaf,5235:ddc6c4,5245:e5d3cc,5255:35264f,5265:493d63,5275:605677,5285:8c8299,5295:b2a8b5,5305:ccc1c6,5315:dbd3d3,5395:02283a,5405:3f6075,5415:607c8c,5425:8499a5,5435:afbcbf,5445:c4cccc,5455:d6d8d3,5463:00353a,5467:193833,5473:26686d,5477:3a564f,5483:609191,5487:667c72,5493:8cafad,5497:91a399,5503:aac4bf,5507:afbab2,5513:ced8d1,5517:c9cec4,5523:d6ddd6,5527:ced1c6,5535:213d30,5545:4f6d5e,5555:779182,5565:96aa99,5575:afbfad,5585:c4cebf,5595:d8dbcc,5605:233a2d,5615:546856,5625:728470,5635:9eaa99,5645:bcc1b2,5655:c6ccba,5665:d6d6c6,5743:3f4926,5747:424716,5753:5e663a,5757:6b702b,5763:777c4f,5767:8c914f,5773:9b9e72,5777:aaad75,5783:b5b58e,5787:c6c699,5793:c6c6a5,5797:d3d1aa,5803:d8d6b7,5807:e0ddbc,5815:494411,5825:75702b,5835:9e9959,5845:b2aa70,5855:ccc693,5865:d6cea3,5875:e0dbb5'.split(',').map(e=>{const[name,h]=e.split(':'),hex='#'+h;return{name,hex,lab:rgbToLab(hexToRgb(hex))}});
+const PMS_MAP=Object.fromEntries(PMS.map(p=>[p.name,p.hex]));
+function nearestPms(hex,k=1){const o=rgbToLab(hexToRgb(hex));return PMS.map(p=>({...p,d:Math.hypot(o[0]-p.lab[0],o[1]-p.lab[1],o[2]-p.lab[2])})).sort((a,b)=>a.d-b.d).slice(0,k)}
+const KINDS=['hex','rgb','hsl','hsv','cmyk','pantone','lab','lch','oklab','oklch'];
+
+/* ---------- parsing og navne ---------- */
+const pc=document.createElement('canvas');pc.width=pc.height=1;
+let pctx=null;try{pctx=pc.getContext('2d',{willReadFrequently:true})}catch(e){}
+function parse(str){str=String(str||'').trim().toLowerCase();if(!str)return null;
+  if(/^[0-9a-f]{3}$|^[0-9a-f]{6}$/.test(str))str='#'+str;
+  if(/^#[0-9a-f]{6}$/.test(str))return str;
+  if(/^#[0-9a-f]{3}$/.test(str))return rgbToHex(hexToRgb(str));
+  let m=str.match(/^cmyk\s*\(?\s*([\d.]+)%?[\s,]+([\d.]+)%?[\s,]+([\d.]+)%?[\s,]+([\d.]+)%?\s*\)?$/);if(m)return rgbToHex(cmykToRgb(m.slice(1).map(Number)));
+  m=str.match(/^(?:pms|pantone)\s*(\d+)\s*[cu]?$/);if(m)return PMS_MAP[m[1]]||null;
+  if(!pctx)return null;
+  try{pctx.fillStyle='#000';pctx.fillStyle=str;const a=pctx.fillStyle;pctx.fillStyle='#fff';pctx.fillStyle=str;if(a!==pctx.fillStyle)return null;
+    pctx.clearRect(0,0,1,1);pctx.fillRect(0,0,1,1);const d=pctx.getImageData(0,0,1,1).data;return rgbToHex([d[0],d[1],d[2]])}catch(e){return null}}
+const NAMES='aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue blueviolet brown burlywood cadetblue chartreuse chocolate coral cornflowerblue cornsilk crimson darkblue darkcyan darkgoldenrod darkgray darkgreen darkkhaki darkmagenta darkolivegreen darkorange darkorchid darkred darksalmon darkseagreen darkslateblue darkslategray darkturquoise darkviolet deeppink deepskyblue dimgray dodgerblue firebrick floralwhite forestgreen fuchsia gainsboro ghostwhite gold goldenrod gray green greenyellow honeydew hotpink indianred indigo ivory khaki lavender lavenderblush lawngreen lemonchiffon lightblue lightcoral lightcyan lightgoldenrodyellow lightgray lightgreen lightpink lightsalmon lightseagreen lightskyblue lightslategray lightsteelblue lightyellow lime limegreen linen maroon mediumaquamarine mediumblue mediumorchid mediumpurple mediumseagreen mediumslateblue mediumspringgreen mediumturquoise mediumvioletred midnightblue mintcream mistyrose moccasin navajowhite navy oldlace olive olivedrab orange orangered orchid palegoldenrod palegreen paleturquoise palevioletred papayawhip peachpuff peru pink plum powderblue purple rebeccapurple red rosybrown royalblue saddlebrown salmon sandybrown seagreen seashell sienna silver skyblue slateblue slategray snow springgreen steelblue tan teal thistle tomato turquoise violet wheat white whitesmoke yellow yellowgreen'
+  .split(' ').map(name=>{const hex=parse(name);return hex?{name,hex,ok:rgbToOklab(hexToRgb(hex))}:null}).filter(Boolean);
+function nearest(hex,k=1){const o=rgbToOklab(hexToRgb(hex));return NAMES.map(n=>({...n,d:Math.hypot(o[0]-n.ok[0],o[1]-n.ok[1],o[2]-n.ok[2])})).sort((a,b)=>a.d-b.d).slice(0,k)}
+
+/* ---------- tilstand ---------- */
+const KEY='farvevaerksted-v1';
+const DEF={color:'#3d5afe',tab:'farve',steps:10,pmode:'analog',
+  palette:['#1b2a6b','#3d5afe','#7aa2ff','#f4c95d','#f26a4b'].map(hex=>({hex,lock:false})),
+  grad:{stops:['#3d5afe','#f26a4b'],type:'linear',angle:90,space:'oklch',steps:9},
+  mix:{a:'#3d5afe',b:'#f4c95d',ratio:50,space:'oklab',steps:7},
+  con:{fg:'#1b2a6b',bg:'#ffffff'},cmp:{a:'#3d5afe',b:'#4263eb'},
+  saved:{colors:[],palettes:[]}};
+let S=JSON.parse(JSON.stringify(DEF));
+try{const raw=localStorage.getItem(KEY);if(raw)S={...S,...JSON.parse(raw)}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+/* ---------- hjælpere ---------- */
+const $=(s,e=document)=>e.querySelector(s);
+const el=html=>{const t=document.createElement('template');t.innerHTML=html.trim();return t.content.firstElementChild};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sw=(hex,sub,cls='')=>`<button type="button" class="sw ${cls}" data-hex="${hex}" style="background:${hex};color:${ink(hex)}" title="Kopiér ${hex.toUpperCase()}">${sub?`<small>${esc(sub)}</small>`:''}${hex.toUpperCase()}</button>`;
+const sws=(list,cls)=>`<div class="sws">${list.map(x=>Array.isArray(x)?sw(x[0],x[1],cls):sw(x,'',cls)).join('')}</div>`;
+const strip=list=>`<div class="strip">${list.map(h=>`<i style="background:${h}"></i>`).join('')}</div>`;
+const rnd=n=>Math.random()*n;
+let toastT;
+function toast(text,hex){$('#toast-t').textContent=text;const b=$('#toast-use');b.hidden=!hex;b.dataset.hex=hex||'';$('#toast').hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>$('#toast').hidden=true,3200)}
+async function copy(text,opt={}){let ok=true;try{await navigator.clipboard.writeText(text)}catch(e){ok=false}
+  if(!ok&&opt.area){opt.area.focus();opt.area.select()}
+  toast(ok?(opt.label||`Kopieret ${text}`):(opt.area?'Markér og kopiér teksten manuelt':text),opt.hex)}
+function field(id,label,get,set){
+  const e=el(`<div class="field"><span class="lbl">${label}</span><div class="frow"><label class="chip"><input type="color" id="${id}-c" aria-label="${label}, farvevælger"></label><input type="text" id="${id}-t" class="mono" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="${label}"><button type="button" class="btn sm" id="${id}-u" title="Indsæt den aktuelle farve">Aktuel</button></div></div>`);
+  const c=$('input[type=color]',e),t=$('input[type=text]',e),chip=$('.chip',e);
+  e.show=()=>{const v=get();c.value=v;chip.style.background=v;if(document.activeElement!==t)t.value=v.toUpperCase()};
+  c.addEventListener('input',()=>{set(c.value)});
+  t.addEventListener('change',()=>{const p=parse(t.value);t.blur();if(p)set(p);else{e.show();toast('Kunne ikke læse farven')}});
+  $('button',e).addEventListener('click',()=>set(S.color));
+  return e}
+function syncHsv(L){if(rgbToHex(hsvToRgb(L))===S.color)return L;const n=rgbToHsv(hexToRgb(S.color));if(n[1]===0)n[0]=L[0];if(n[2]===0)n[1]=L[1];return n}
+
+/* ---------- værktøjer ---------- */
+const T={};
+
+T.farve={name:'Farve',build(s){s.innerHTML=`
+  <div class="hero"><div><h1 id="f-name"></h1><div class="hx" id="f-hex"></div></div><div class="pills" id="f-pills"></div></div>
+  <div class="blk"><h2>Konverter</h2><div class="fmt" id="f-fmt"></div></div>
+  <div class="blk"><h2>Nærmeste Pantone</h2><div id="f-pms"></div><p class="note">Vejledende match mod 907 Pantone-numre (coated). ΔE under 2 er meget tæt; over 5 findes farven ikke rigtigt i Pantone. Tjek altid mod en fysisk farvevifte før tryk.</p></div>
+  <div class="blk"><h2>Variationer</h2>
+    <div class="row" style="margin-bottom:12px"><label class="ctl grow">Antal trin <output id="f-steps-o"></output><input type="range" id="f-steps" min="3" max="20"></label></div>
+    <div class="grp" id="f-var"></div></div>
+  <div class="blk"><h2>Tailwind-skala</h2><div id="f-tw"></div><div class="row" style="margin-top:10px"><button class="btn" id="f-tw-copy" type="button" data-label="Tailwind-skala kopieret">Kopiér til Tailwind</button></div><p class="note">Skala fra 50 til 950 i farvens egen farvetone.</p></div>
+  <div class="blk"><h2>Harmonier</h2><div class="grp" id="f-harm"></div></div>
+  <div class="blk"><h2>Farveblindhed</h2><div id="f-cvd"></div><p class="note">Tilnærmet simulering af hvordan farven opleves.</p></div>`;
+  $('#f-steps').value=S.steps;$('#f-steps').addEventListener('input',e=>{S.steps=+e.target.value;save();this.update()})},
+ update(){const c=S.color,n=nearest(c)[0];
+  $('#f-name').textContent=n?n.name:'Farve';$('#f-hex').textContent=c.toUpperCase()+(n&&n.hex===c?' · præcist navn':' · nærmeste navn');
+  const cw=contrast(c,'#ffffff'),cb=contrast(c,'#000000');
+  $('#f-pills').innerHTML=`<span class="pill ${cw>=4.5?'ok':'bad'}">Hvid tekst ${cw.toFixed(2)}:1</span><span class="pill ${cb>=4.5?'ok':'bad'}">Sort tekst ${cb.toFixed(2)}:1</span>`;
+  $('#f-fmt').innerHTML=KINDS.map(k=>{const v=fmt(c,k);return`<button type="button" data-copy="${esc(v)}"><b>${k.toUpperCase()}</b><span>${esc(v)}</span></button>`}).join('');
+  $('#f-pms').innerHTML=sws(nearestPms(c,6).map(p=>[p.hex,`PMS ${p.name} · ΔE ${p.d.toFixed(1)}`]));
+  $('#f-steps-o').textContent=S.steps;
+  const st=S.steps,ser=(to)=>Array.from({length:st+1},(_,i)=>[mix(c,to,i/st,'rgb'),R(i/st*100)+'%']);
+  $('#f-var').innerHTML=[['Tints (mod hvid)','#ffffff'],['Shades (mod sort)','#000000'],['Tones (mod grå)','#808080']].map(([t,to])=>`<div><h3>${t}</h3>${sws(ser(to))}</div>`).join('');
+  const tw=twScale(c);$('#f-tw').innerHTML=sws(tw);$('#f-tw-copy').dataset.copy="farve: {\n"+tw.map(([x,k])=>`  ${k}: '${x}',`).join('\n')+'\n}';
+  const[h,s]=rgbToHsl(hexToRgb(c));
+  $('#f-harm').innerHTML=HARM.map(([t,o])=>`<div><h3>${t}</h3>${sws(o.map(d=>[rot(c,d),(d>0?'+':'')+d+'°']))}</div>`).join('')+
+   `<div><h3>Monokrom</h3>${sws([15,30,45,60,75,90].map(l=>[rgbToHex(hslToRgb([h,s,l])),'L '+l+'%']))}</div>`;
+  $('#f-cvd').innerHTML=sws([[c,'Normalt syn'],...CVD.map(([t,m])=>[sim(c,m),t.split(' ')[0]])]);
+ }};
+
+T.vaelger={name:'Vælger',P:[0,0,0],K:[0,0,0,100],busy:null,build(s){
+  const sl=(id,l,max)=>`<label class="sl">${l}<input type="range" id="pk-${id}" min="0" max="${max}"><output id="pk-${id}-o"></output></label>`;
+  s.innerHTML=`<div class="blk"><h2>Farvevælger</h2><div class="sv" id="pk-sv"><i class="mk main" id="pk-mk"></i></div>
+   <input type="range" id="pk-hue" min="0" max="360" aria-label="Farvetone" style="margin-top:12px"></div>
+   <div class="two"><div class="blk"><h2>RGB</h2><div class="grp" style="gap:6px">${sl('r','R',255)+sl('g','G',255)+sl('b','B',255)}</div></div>
+   <div class="blk"><h2>HSL</h2><div class="grp" style="gap:6px">${sl('h','H',360)+sl('s','S',100)+sl('l','L',100)}</div></div>
+   <div class="blk"><h2>CMYK</h2><div class="grp" style="gap:6px">${sl('c','C',100)+sl('m','M',100)+sl('y','Y',100)+sl('k','K',100)}</div></div></div>
+   <div class="blk"><h2>Resultat</h2><div id="pk-out"></div></div>`;
+  const sv=$('#pk-sv'),me=this;let down=false;
+  const pick=e=>{const r=sv.getBoundingClientRect();me.P=[me.P[0],clamp((e.clientX-r.left)/r.width)*100,(1-clamp((e.clientY-r.top)/r.height))*100];setColor(rgbToHex(hsvToRgb(me.P)))};
+  sv.addEventListener('pointerdown',e=>{down=true;try{sv.setPointerCapture(e.pointerId)}catch(x){}pick(e)});
+  sv.addEventListener('pointermove',e=>{if(down)pick(e)});
+  ['pointerup','pointercancel'].forEach(t=>sv.addEventListener(t,()=>down=false));
+  const v=id=>+$('#pk-'+id).value;
+  s.addEventListener('input',e=>{const id=e.target.id;if(!id.startsWith('pk-'))return;me.busy=e.target;
+    if(id==='pk-hue'){me.P=[v('hue'),me.P[1],me.P[2]];setColor(rgbToHex(hsvToRgb(me.P)))}
+    else if('cmyk'.includes(id[3])&&id.length===4){me.K=[v('c'),v('m'),v('y'),v('k')];setColor(rgbToHex(cmykToRgb(me.K)))}
+    else if('rgb'.includes(id[3])&&id.length===4&&id!=='pk-h')setColor(rgbToHex([v('r'),v('g'),v('b')]));
+    else{const rgb=hslToRgb([v('h'),v('s'),v('l')]),n=rgbToHsv(rgb);me.P=[v('h'),n[1],n[2]];setColor(rgbToHex(rgb))}});
+  s.addEventListener('change',()=>{me.busy=null;me.update()})},
+ update(){this.P=syncHsv(this.P);const P=this.P,c=S.color,rgb=hexToRgb(c),hsl=rgbToHsl(rgb);
+  $('#pk-sv').style.background=`linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,transparent),hsl(${P[0]} 100% 50%)`;
+  const mk=$('#pk-mk');mk.style.left=P[1]+'%';mk.style.top=(100-P[2])+'%';mk.style.background=c;
+  const set=(id,val)=>{const e=$('#pk-'+id);if(e!==this.busy)e.value=R(val);const o=$('#pk-'+id+'-o');if(o)o.textContent=R(e===this.busy?+e.value:val)};
+  set('hue',P[0]);set('r',rgb[0]);set('g',rgb[1]);set('b',rgb[2]);set('h',P[0]);set('s',hsl[1]);set('l',hsl[2]);
+  if(rgbToHex(cmykToRgb(this.K))!==c)this.K=rgbToCmyk(rgb);'cmyk'.split('').forEach((k,i)=>set(k,this.K[i]));
+  $('#pk-out').innerHTML=sws([c],'big');
+ }};
+
+T.hjul={name:'Farvehjul',W:[0,0,100],lastV:-1,build(s){s.innerHTML=`
+  <div class="two"><div class="blk"><h2>Farvehjul</h2><div class="wheel" id="wh"><canvas id="wh-c" width="320" height="320"></canvas><div id="wh-m"></div></div></div>
+  <div class="blk grp"><div><h2>Indstillinger</h2><div class="grp" style="gap:10px">
+    <label class="ctl">Harmoni<select id="wh-h">${HARM.map(([t],i)=>`<option value="${i}">${t}</option>`).join('')}</select></label>
+    <label class="ctl">Lysstyrke <output id="wh-v-o"></output><input type="range" id="wh-v" min="0" max="100"></label></div></div>
+    <div><h2>Farver</h2><div id="wh-out"></div><p class="note">Træk i hjulet for at ændre farvetone og mætning.</p></div></div></div>`;
+  const w=$('#wh'),me=this;let down=false;
+  const pick=e=>{const r=w.getBoundingClientRect(),dx=e.clientX-r.left-r.width/2,dy=e.clientY-r.top-r.height/2;
+    me.W=[(Math.atan2(dx,-dy)*180/Math.PI+360)%360,Math.min(1,Math.hypot(dx,dy)/(r.width/2))*100,Math.max(me.W[2],1)];setColor(rgbToHex(hsvToRgb(me.W)))};
+  w.addEventListener('pointerdown',e=>{down=true;try{w.setPointerCapture(e.pointerId)}catch(x){}pick(e)});
+  w.addEventListener('pointermove',e=>{if(down)pick(e)});
+  ['pointerup','pointercancel'].forEach(t=>w.addEventListener(t,()=>down=false));
+  $('#wh-v').addEventListener('input',e=>{me.W=[me.W[0],me.W[1],+e.target.value];setColor(rgbToHex(hsvToRgb(me.W)))});
+  $('#wh-h').addEventListener('change',()=>me.update())},
+ draw(v){const cv=$('#wh-c'),x=cv.getContext('2d'),n=cv.width,img=x.createImageData(n,n),d=img.data,c=n/2;
+  for(let py=0;py<n;py++)for(let px=0;px<n;px++){const dx=px+.5-c,dy=py+.5-c,rgb=hsvToRgb([(Math.atan2(dx,-dy)*180/Math.PI+360)%360,Math.min(1,Math.hypot(dx,dy)/c)*100,v]),i=(py*n+px)*4;d[i]=rgb[0];d[i+1]=rgb[1];d[i+2]=rgb[2];d[i+3]=255}
+  x.putImageData(img,0,0)},
+ update(){this.W=syncHsv(this.W);const W=this.W,v=R(W[2]);if(v!==this.lastV){this.draw(v);this.lastV=v}
+  const vs=$('#wh-v');if(document.activeElement!==vs)vs.value=v;$('#wh-v-o').textContent=v+'%';
+  const offs=HARM[+$('#wh-h').value][1],cols=offs.map(o=>rgbToHex(hsvToRgb([W[0]+o,W[1],W[2]])));
+  $('#wh-m').innerHTML=offs.map((o,i)=>{const a=(W[0]+o)*Math.PI/180,r=W[1]/100*50;return`<i class="mk ${o===0?'main':''}" style="left:${50+Math.sin(a)*r}%;top:${50-Math.cos(a)*r}%;background:${cols[i]}"></i>`}).join('');
+  $('#wh-out').innerHTML=sws(cols.map((c,i)=>[c,(offs[i]>0?'+':'')+offs[i]+'°']));
+ }};
+
+const PMODES=[['analog','Analog'],['komplementaer','Komplementær'],['triadisk','Triadisk'],['tetradisk','Tetradisk'],['monokrom','Monokrom'],['pastel','Pastel'],['tilfaeldig','Helt tilfældig']];
+function genPalette(){const n=S.palette.length,mode=S.pmode,lk=S.palette.find(p=>p.lock);
+  const base=lk?rgbToHsl(hexToRgb(lk.hex)):[rnd(360),55+rnd(35),50];
+  const offs={analog:[0,25,-25,50,-50],komplementaer:[0,180,15,195,-15],triadisk:[0,120,240],tetradisk:[0,90,180,270],monokrom:[0]}[mode];
+  S.palette.forEach((p,i)=>{if(p.lock)return;let h,s,l;
+    if(mode==='tilfaeldig'){h=rnd(360);s=35+rnd(55);l=25+rnd(55)}
+    else if(mode==='pastel'){h=rnd(360);s=50+rnd(40);l=80+rnd(10)}
+    else{h=base[0]+offs[i%offs.length]+(mode==='monokrom'?0:rnd(16)-8);s=clamp(base[1]+rnd(30)-15,20,95);l=mode==='monokrom'?15+(i+.5)/n*70:25+rnd(55)}
+    p.hex=rgbToHex(hslToRgb([h,s,l]))})}
+function exportText(cols,form,kind){const v=cols.map(c=>fmt(c,kind));
+  if(form==='css')return':root {\n'+v.map((x,i)=>`  --farve-${i+1}: ${x};`).join('\n')+'\n}';
+  if(form==='scss')return v.map((x,i)=>`$farve-${i+1}: ${x};`).join('\n');
+  if(form==='json')return JSON.stringify(v,null,2);
+  if(form==='tailwind')return'colors: {\n'+v.map((x,i)=>`  'farve-${i+1}': '${x}',`).join('\n')+'\n}';
+  return v.join('\n')}
+const VARS=[['Lysere',c=>adj(c,0,12)],['Mørkere',c=>adj(c,0,-12)],['Mere mættet',c=>adj(c,20,0)],['Afdæmpet',c=>adj(c,-25,0)],['Pastel',c=>mix(c,'#ffffff',.55,'rgb')],['Farvetone +30°',c=>rot(c,30)],['Farvetone −30°',c=>rot(c,-30)],['Komplementær',c=>rot(c,180)]];
+
+T.palet={name:'Paletbygger',build(s){s.innerHTML=`
+  <div class="blk"><h2>Palet</h2>
+   <div class="row" style="margin-bottom:12px"><label class="ctl">Metode<select id="pl-mode">${PMODES.map(([v,t])=>`<option value="${v}">${t}</option>`).join('')}</select></label>
+    <button class="btn pri" id="pl-gen" type="button">Generér</button><button class="btn" id="pl-add" type="button">Tilføj aktuel farve</button><button class="btn" id="pl-sort" type="button">Sortér efter lyshed</button></div>
+   <div class="pbars" id="pl-bars"></div><p class="note">Låste farver bliver stående når du genererer. Den første låste farve styrer harmonien.</p></div>
+  <div class="blk"><h2>Gem</h2><div class="row"><label class="ctl grow">Navn<input type="text" id="pl-name" placeholder="Min palet"></label><button class="btn pri" id="pl-save" type="button">Gem palet</button></div></div>
+  <div class="blk"><h2>Variationer</h2><div class="grp" style="gap:8px" id="pl-vars"></div></div>
+  <div class="blk"><h2>Eksport</h2><div class="row" style="margin-bottom:10px">
+    <label class="ctl">Format<select id="pl-form"><option value="css">CSS-variabler</option><option value="scss">SCSS</option><option value="tailwind">Tailwind</option><option value="json">JSON</option><option value="list">Liste</option></select></label>
+    <label class="ctl">Værdier<select id="pl-kind">${['hex','rgb','hsl','cmyk','pantone','lab','lch','oklab','oklch'].map(k=>`<option value="${k}">${k.toUpperCase()}</option>`).join('')}</select></label>
+    <button class="btn" id="pl-copy" type="button">Kopiér</button></div><textarea id="pl-exp" readonly aria-label="Eksport"></textarea></div>`;
+  const me=this;$('#pl-mode').value=S.pmode;
+  $('#pl-mode').addEventListener('change',e=>{S.pmode=e.target.value;save()});
+  $('#pl-gen').addEventListener('click',()=>{genPalette();save();me.update()});
+  $('#pl-add').addEventListener('click',()=>{if(S.palette.length>=12)return toast('Højst 12 farver');S.palette.push({hex:S.color,lock:false});save();me.update()});
+  $('#pl-sort').addEventListener('click',()=>{S.palette.sort((a,b)=>lum(a.hex)-lum(b.hex));save();me.update()});
+  $('#pl-save').addEventListener('click',()=>{const name=$('#pl-name').value.trim()||`Palet ${S.saved.palettes.length+1}`;S.saved.palettes.unshift({name,colors:S.palette.map(p=>p.hex)});save();$('#pl-name').value='';toast(`Gemt som "${name}"`)});
+  ['pl-form','pl-kind'].forEach(id=>$('#'+id).addEventListener('change',()=>me.out()));
+  $('#pl-copy').addEventListener('click',()=>copy($('#pl-exp').value,{label:'Eksport kopieret',area:$('#pl-exp')}));
+  $('#pl-bars').addEventListener('input',e=>{const b=e.target.closest('.pbar');if(!b)return;const p=S.palette[+b.dataset.i];p.hex=e.target.value;b.style.background=p.hex;b.style.color=ink(p.hex);$('.hx',b).textContent=p.hex.toUpperCase();save();me.out()});
+  $('#pl-bars').addEventListener('click',e=>{const a=e.target.closest('[data-act]');if(!a)return;const i=+a.closest('.pbar').dataset.i,p=S.palette[i],act=a.dataset.act;
+    if(act==='lock')p.lock=!p.lock;else if(act==='copy')return copy(p.hex.toUpperCase());else if(act==='use')return setColor(p.hex);
+    else if(act==='del'){if(S.palette.length<=2)return toast('En palet skal have mindst 2 farver');S.palette.splice(i,1)}
+    else if(act==='left'&&i>0)S.palette.splice(i-1,0,S.palette.splice(i,1)[0]);
+    save();me.update()});
+  $('#pl-vars').addEventListener('click',e=>{const b=e.target.closest('[data-var]');if(!b)return;const f=VARS[+b.dataset.var][1];S.palette.forEach(p=>p.hex=f(p.hex));save();me.update()})},
+ out(){const cols=S.palette.map(p=>p.hex);
+  $('#pl-vars').innerHTML=VARS.map(([t,f],i)=>`<div class="vrow"><span>${t}</span>${strip(cols.map(f))}<button type="button" class="btn sm" data-var="${i}">Brug</button></div>`).join('');
+  $('#pl-exp').value=exportText(cols,$('#pl-form').value,$('#pl-kind').value)},
+ update(){$('#pl-bars').innerHTML=S.palette.map((p,i)=>`<div class="pbar" data-i="${i}" style="background:${p.hex};color:${ink(p.hex)}">
+   <label title="Redigér farve"><input type="color" id="pl-c${i}" value="${p.hex}" aria-label="Farve ${i+1}"><span class="hx">${p.hex.toUpperCase()}</span></label>
+   <div class="pact"><button type="button" data-act="lock" aria-pressed="${p.lock}"><span>${p.lock?'Låst':'Lås'}</span></button><button type="button" data-act="copy">Kopiér</button><button type="button" data-act="use">Brug</button><button type="button" data-act="left" title="Flyt frem">Flyt</button><button type="button" data-act="del">Fjern</button></div></div>`).join('');
+  this.out()}};
+
+const chroma=h=>toLch(rgbToOklab(hexToRgb(h)))[1];
+const on=(bg,pref)=>contrast(pref,bg)>=3?pref:ink(bg);
+T.visualiser={name:'Visualisér',perm:null,build(s){const me=this;s.innerHTML=`
+  <div class="blk"><h2>Paletten i brug</h2><div class="row" style="margin-bottom:12px"><button class="btn pri" id="vz-new" type="button">Ny palet</button><button class="btn" id="vz-mix" type="button">Bland roller</button><button class="btn" id="vz-auto" type="button">Auto-roller</button><button class="btn" id="vz-edit" type="button">Redigér palet</button></div>
+   <div id="vz-strip"></div><p class="note">Viser farverne fra Paletbygger. "Bland roller" bytter om på hvilken farve der er baggrund, tekst og accent. Mellemrumstasten giver en ny palet.</p></div>
+  <div class="mocks" id="vz-out"></div>`;
+  $('#vz-new').addEventListener('click',()=>{genPalette();save();me.update()});
+  $('#vz-mix').addEventListener('click',()=>{const p=S.palette.map((_,i)=>i);for(let i=p.length-1;i>0;i--){const j=Math.floor(rnd(i+1));[p[i],p[j]]=[p[j],p[i]]}me.perm=p;me.update()});
+  $('#vz-auto').addEventListener('click',()=>{me.perm=null;me.update()});
+  $('#vz-edit').addEventListener('click',()=>show('palet'))},
+ update(){const cols=S.palette.map(p=>p.hex),n=cols.length;let o;
+  if(this.perm&&this.perm.length===n)o=this.perm.map(i=>cols[i]);
+  else{const L=[...cols].sort((a,b)=>lum(b)-lum(a));o=[L[0],L[n-1],...L.slice(1,-1).sort((a,b)=>chroma(b)-chroma(a))]}
+  const rest=o.length>2?o.slice(2):[o[1]],r=i=>rest[i%rest.length],bg=o[0],t=on(bg,o[1]),p=r(0),s=r(1),a=r(2),tx=o[1];
+  $('#vz-strip').innerHTML=sws([[bg,'Baggrund'],[tx,'Tekst'],...rest.map((c,i)=>[c,['Primær','Sekundær','Accent'][i]||'Ekstra '+(i-2)])]);
+  const cell=50,pat=[];for(let y=0;y<6;y++)for(let x=0;x<8;x++){const X=x*cell,Y=y*cell,f=o[(x*2+y+1)%n],k=(x+y*3)%4;
+    pat.push(`<rect x="${X}" y="${Y}" width="50" height="50" fill="${o[(x+y)%n]}"/>`+(k===0?`<circle cx="${X+25}" cy="${Y+25}" r="17" fill="${f}"/>`:k===1?`<path d="M${X} ${Y}h50a50 50 0 0 1-50 50z" fill="${f}"/>`:k===2?`<path d="M${X} ${Y+50}L${X+50} ${Y}v50z" fill="${f}"/>`:`<path d="M${X+50} ${Y+50}h-50a50 50 0 0 1 50-50z" fill="${f}"/>`))}
+  const bars=[42,68,51,88,60,34,74],bc=[p,s,a,tx].filter((c,i,l)=>l.indexOf(c)===i&&contrast(c,bg)>1.15);
+  const M=[
+   ['Mobilapp',`<div class="fr" style="background:${s};display:grid;place-items:center"><div class="ph" style="background:${bg};color:${t}">
+     <div style="background:${p};color:${ink(p)};padding:16px 12px 12px"><b style="font-size:14px;display:block">God morgen</b>3 nye opgaver i dag</div>
+     <div style="padding:10px;display:flex;flex-direction:column;gap:8px;flex:1">
+      <div style="background:${t}14;border-radius:8px;padding:8px"><b>Ugens mål</b><div style="height:6px;border-radius:9px;background:${t}22;margin-top:6px"><div style="width:65%;height:100%;border-radius:9px;background:${on(bg,a)}"></div></div></div>
+      ${[[p,'Skitser til forside'],[s,'Vælg skrifttyper'],[a,'Send til tryk']].map(([c,x])=>`<div style="display:flex;gap:7px;align-items:center"><i style="width:10px;height:10px;border-radius:50%;background:${c};flex:none"></i>${x}</div>`).join('')}
+      <span class="bt" style="background:${a};color:${ink(a)};text-align:center;margin-top:auto">Tilføj opgave</span></div>
+     <div style="display:flex;justify-content:space-around;padding:9px;border-top:1px solid ${t}22">${[p,t+'44',t+'44'].map(c=>`<i style="width:16px;height:5px;border-radius:9px;background:${c}"></i>`).join('')}</div></div></div>`],
+   ['Hjemmeside',`<div class="fr" style="background:${bg};color:${t};display:flex;flex-direction:column">
+     <div style="display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid ${t}1f"><i style="width:14px;height:14px;border-radius:4px;background:${p}"></i><b>Studio</b><span style="margin-left:auto;opacity:.75">Arbejde · Om · Kontakt</span></div>
+     <div style="padding:18px 16px;display:flex;flex-direction:column;gap:10px;align-items:flex-start;flex:1">
+      <div class="hd" style="font-size:24px;line-height:1.05">Farver der arbejder sammen</div><div style="opacity:.8;max-width:30ch">Se paletten på en rigtig side, før du vælger den.</div>
+      <div style="display:flex;gap:8px"><span class="bt" style="background:${p};color:${ink(p)}">Kom i gang</span><span class="bt" style="box-shadow:inset 0 0 0 1px ${t}">Læs mere</span></div></div>
+     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px 16px">${[s,a,tx].map((c,i)=>`<div style="background:${c};color:${ink(c)};border-radius:8px;padding:10px 8px;height:62px"><b>${['Design','Kode','Tryk'][i]}</b></div>`).join('')}</div></div>`],
+   ['Branding',`<div class="fr" style="background:${s};display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center">
+     <div style="width:210px;height:118px;border-radius:8px;background:${bg};color:${t};padding:14px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 8px 18px rgb(0 0 0 / .2)">
+      <svg viewBox="0 0 40 40" style="width:34px;height:34px"><circle cx="20" cy="20" r="20" fill="${p}"/><path d="M20 0a20 20 0 0 1 20 20H20z" fill="${a}"/></svg><div><b style="font-size:14px;display:block">Nord &amp; Co.</b>Designstudie · Aarhus</div></div>
+     <div style="width:210px;height:118px;border-radius:8px;background:${p};color:${ink(p)};padding:14px;display:flex;flex-direction:column;justify-content:flex-end;box-shadow:0 8px 18px rgb(0 0 0 / .2)"><b style="font-size:13px">Anna Nord</b>anna@nordco.dk<div style="height:4px;width:40px;background:${a};margin-top:8px"></div></div></div>`],
+   ['Typografi',`<div class="fr" style="background:${p};color:${on(p,bg)};padding:20px;display:flex;flex-direction:column;justify-content:space-between">
+     <div style="letter-spacing:.14em;text-transform:uppercase;font-weight:600">Udstilling · 12. marts</div>
+     <div><div class="hd" style="font-size:44px;line-height:.95;letter-spacing:-.02em">Form følger <span style="color:${on(p,a)}">farve</span></div>
+     <div style="margin-top:12px;max-width:34ch">En plakat viser hurtigt om overskrift, brødtekst og fremhævning kan læses mod hinanden.</div></div>
+     <div style="display:flex;gap:6px">${o.map(c=>`<i style="width:22px;height:22px;border-radius:50%;background:${c};box-shadow:0 0 0 1px ${on(p,bg)}55"></i>`).join('')}</div></div>`],
+   ['Mønster',`<div class="fr"><svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">${pat.join('')}</svg></div>`],
+   ['Illustration',`<div class="fr"><svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice"><rect width="400" height="300" fill="${bg}"/><circle cx="290" cy="95" r="42" fill="${a}"/>
+     <path d="M0 230L90 110l70 80 60-70 180 150v30H0z" fill="${s}"/><path d="M0 300V220l80-50 70 60 90-90 160 120v40z" fill="${p}"/><path d="M0 300v-36q100-34 200-10t200-14v60z" fill="${tx}"/>
+     ${[60,95,330].map(x=>`<path d="M${x} 270l12-40 12 40z" fill="${a}"/>`).join('')}</svg></div>`],
+   ['Diagram',`<div class="fr" style="background:${bg};color:${t};padding:16px;display:flex;flex-direction:column;gap:10px">
+     <div><b style="font-size:14px;display:block">Omsætning pr. uge</b><span style="opacity:.75">Eksempeltal</span></div>
+     <div style="flex:1;display:flex;gap:8px;align-items:flex-end;border-bottom:1px solid ${t}55">${bars.map((h,i)=>`<div style="flex:1;height:${h}%;background:${bc[i%bc.length]||t};border-radius:4px 4px 0 0"></div>`).join('')}</div>
+     <div style="display:flex;flex-wrap:wrap;gap:4px 12px">${bc.map((c,i)=>`<span style="display:flex;gap:5px;align-items:center"><i style="width:9px;height:9px;border-radius:2px;background:${c}"></i>Serie ${i+1}</span>`).join('')}</div></div>`]];
+  $('#vz-out').innerHTML=M.map(([t,h])=>`<div class="mock"><h3>${t}</h3>${h}</div>`).join('')}};
+
+const TW=[[50,.97,.15],[100,.93,.3],[200,.87,.5],[300,.79,.75],[400,.7,.95],[500,.62,1],[600,.53,1],[700,.45,.9],[800,.37,.75],[900,.29,.6],[950,.21,.45]];
+const twScale=hex=>{const[,C,H]=toLch(rgbToOklab(hexToRgb(hex)));return TW.map(([k,l,f])=>[rgbToHex(oklabToRgb(fromLch([l,C*f,H]))),String(k)])};
+
+const SPACES=[['rgb','RGB'],['hsl','HSL'],['lab','LAB'],['lch','LCH'],['oklab','OKLAB'],['oklch','OKLCH']];
+const spOpts=SPACES.map(([v,t])=>`<option value="${v}">${t}</option>`).join('');
+
+T.gradient={name:'Gradient',build(s){s.innerHTML=`
+  <div class="blk"><h2>Gradient</h2><div class="gprev" id="gr-prev"></div></div>
+  <div class="blk"><h2>Farver</h2><div class="stops" id="gr-stops"></div><div class="row" style="margin-top:10px"><button class="btn" id="gr-add" type="button">Tilføj aktuel farve</button><button class="btn" id="gr-rev" type="button">Vend om</button></div></div>
+  <div class="blk"><h2>Indstillinger</h2><div class="row">
+    <label class="ctl">Type<select id="gr-type"><option value="linear">Lineær</option><option value="radial">Radial</option></select></label>
+    <label class="ctl">Farverum<select id="gr-space">${spOpts}</select></label>
+    <label class="ctl grow">Vinkel <output id="gr-angle-o"></output><input type="range" id="gr-angle" min="0" max="360"></label>
+    <label class="ctl grow">Trin <output id="gr-steps-o"></output><input type="range" id="gr-steps" min="2" max="30"></label></div></div>
+  <div class="blk"><h2>Trin</h2><div id="gr-sw"></div></div>
+  <div class="blk"><h2>CSS</h2><textarea id="gr-css" readonly aria-label="CSS"></textarea><div class="row" style="margin-top:8px"><button class="btn" id="gr-copy" type="button">Kopiér CSS</button><button class="btn" id="gr-pal" type="button">Send trin til paletbygger</button></div></div>`;
+  const me=this,G=S.grad;
+  [['type','type'],['space','space'],['angle','angle'],['steps','steps']].forEach(([id,k])=>{const e=$('#gr-'+id);e.value=G[k];e.addEventListener('input',()=>{G[k]=e.type==='range'?+e.value:e.value;save();me.out()})});
+  $('#gr-add').addEventListener('click',()=>{G.stops.push(S.color);save();me.update()});
+  $('#gr-rev').addEventListener('click',()=>{G.stops.reverse();save();me.update()});
+  $('#gr-copy').addEventListener('click',()=>copy($('#gr-css').value,{label:'CSS kopieret',area:$('#gr-css')}));
+  $('#gr-pal').addEventListener('click',()=>{S.palette=scale(G.stops,Math.min(G.steps,12),G.space).map(hex=>({hex,lock:false}));save();show('palet')});
+  $('#gr-stops').addEventListener('input',e=>{const st=e.target.closest('.stop');if(!st)return;G.stops[+st.dataset.i]=e.target.value;$('.chip',st).style.background=e.target.value;$('span',st).textContent=e.target.value.toUpperCase();save();me.out()});
+  $('#gr-stops').addEventListener('click',e=>{const x=e.target.closest('.x');if(!x)return;if(G.stops.length<=2)return toast('En gradient skal have mindst 2 farver');G.stops.splice(+x.closest('.stop').dataset.i,1);save();me.update()})},
+ out(){const G=S.grad,list=G.space==='rgb'?G.stops:scale(G.stops,(G.stops.length-1)*8+1,G.space);
+  const css=G.type==='radial'?`radial-gradient(circle, ${list.join(', ')})`:`linear-gradient(${G.angle}deg, ${list.join(', ')})`;
+  $('#gr-prev').style.background=css;$('#gr-css').value=`background: ${css};`;
+  $('#gr-angle-o').textContent=G.angle+'°';$('#gr-steps-o').textContent=G.steps;$('#gr-angle').disabled=G.type==='radial';
+  $('#gr-sw').innerHTML=sws(scale(G.stops,G.steps,G.space))},
+ update(){$('#gr-stops').innerHTML=S.grad.stops.map((h,i)=>`<div class="stop" data-i="${i}"><label class="chip" style="background:${h}"><input type="color" id="gr-c${i}" value="${h}" aria-label="Farve ${i+1}"></label><span>${h.toUpperCase()}</span><button type="button" class="x" aria-label="Fjern farve ${i+1}">×</button></div>`).join('');this.out()}};
+
+T.mixer={name:'Mixer',build(s){const M=S.mix,me=this;s.innerHTML=`
+  <div class="blk"><h2>Bland to farver</h2><div class="row" id="mx-f"></div></div>
+  <div class="blk"><div class="row">
+    <label class="ctl grow">Forhold <output id="mx-ratio-o"></output><input type="range" id="mx-ratio" min="0" max="100"></label>
+    <label class="ctl">Farverum<select id="mx-space">${spOpts}</select></label>
+    <label class="ctl grow">Trin <output id="mx-steps-o"></output><input type="range" id="mx-steps" min="3" max="21"></label></div></div>
+  <div class="blk"><h2>Resultat</h2><div id="mx-res"></div></div>
+  <div class="blk"><h2>Hele skalaen</h2><div id="mx-sw"></div></div>`;
+  this.fa=field('mx-a','Farve A',()=>M.a,v=>{M.a=v;save();me.update()});this.fb=field('mx-b','Farve B',()=>M.b,v=>{M.b=v;save();me.update()});
+  $('#mx-f').append(this.fa,this.fb);
+  ['ratio','space','steps'].forEach(k=>{const e=$('#mx-'+k);e.value=M[k];e.addEventListener('input',()=>{M[k]=e.type==='range'?+e.value:e.value;save();me.update()})})},
+ update(){const M=S.mix;this.fa.show();this.fb.show();$('#mx-ratio-o').textContent=`${100-M.ratio}% A · ${M.ratio}% B`;$('#mx-steps-o').textContent=M.steps;
+  $('#mx-res').innerHTML=sws([mix(M.a,M.b,M.ratio/100,M.space)],'big');
+  $('#mx-sw').innerHTML=sws(scale([M.a,M.b],M.steps,M.space).map((c,i)=>[c,R(i/(M.steps-1)*100)+'% B']))}};
+
+function suggest(fg,bg,target){const[h,s,l]=rgbToHsl(hexToRgb(fg));for(let d=1;d<=100;d++)for(const nl of[l-d,l+d]){if(nl<0||nl>100)continue;const c=rgbToHex(hslToRgb([h,s,nl]));if(contrast(c,bg)>=target)return c}return null}
+T.kontrast={name:'Kontrast',build(s){const C=S.con,me=this;s.innerHTML=`
+  <div class="blk"><h2>Kontrasttjek (WCAG)</h2><div class="row" id="cn-f"></div><div class="row" style="margin-top:10px"><button class="btn" id="cn-swap" type="button">Byt om</button></div></div>
+  <div class="blk"><div class="ratio" id="cn-ratio"></div><div class="pills" id="cn-pills" style="margin-top:10px"></div></div>
+  <div class="blk"><h2>Forhåndsvisning</h2><div class="cprev" id="cn-prev"><p class="l">Stor overskrift på 28 px</p><p class="s">Almindelig brødtekst skal have mindst 4,5:1 for at bestå AA. Store overskrifter og ikoner kan nøjes med 3:1.</p></div></div>
+  <div class="blk"><h2>Forslag</h2><div id="cn-sug"></div></div>`;
+  this.ff=field('cn-fg','Tekstfarve',()=>C.fg,v=>{C.fg=v;save();me.update()});this.fb=field('cn-bg','Baggrund',()=>C.bg,v=>{C.bg=v;save();me.update()});
+  $('#cn-f').append(this.ff,this.fb);
+  $('#cn-swap').addEventListener('click',()=>{[C.fg,C.bg]=[C.bg,C.fg];save();me.update()});
+  $('#cn-sug').addEventListener('click',e=>{const b=e.target.closest('[data-fix]');if(b){C.fg=b.dataset.fix;save();me.update()}})},
+ update(){const C=S.con,r=contrast(C.fg,C.bg);this.ff.show();this.fb.show();
+  $('#cn-ratio').textContent=r.toFixed(2).replace('.',',')+':1';
+  $('#cn-pills').innerHTML=[['AA tekst',4.5],['AA stor tekst',3],['AAA tekst',7],['AAA stor tekst',4.5],['Ikoner og UI',3]].map(([t,m])=>`<span class="pill ${r>=m?'ok':'bad'}">${t}: ${r>=m?'består':'dumper'}</span>`).join('');
+  const p=$('#cn-prev');p.style.background=C.bg;p.style.color=C.fg;
+  const rows=[['AA (4,5:1)',4.5],['AAA (7:1)',7]].filter(([,m])=>r<m).map(([t,m])=>{const c=suggest(C.fg,C.bg,m);return c?`<div class="vrow"><span>${t}</span>${sws([[c,contrast(c,C.bg).toFixed(2)+':1']])}<button type="button" class="btn sm" data-fix="${c}">Brug som tekst</button></div>`:''}).join('');
+  $('#cn-sug').innerHTML=rows?`<div class="grp" style="gap:8px">${rows}</div><p class="note">Nærmeste lyshed af tekstfarven der består mod baggrunden.</p>`:`<p class="empty">Parret består allerede AAA.</p>`}};
+
+T.sammenlign={name:'Sammenlign',build(s){const C=S.cmp,me=this;s.innerHTML=`
+  <div class="blk"><h2>Sammenlign to farver</h2><div class="row" id="cp-f"></div></div>
+  <div class="blk"><div class="duo" id="cp-duo"></div></div>
+  <div class="blk"><div class="ratio" id="cp-de"></div><p class="note" id="cp-txt"></p><div class="pills" id="cp-pills" style="margin-top:10px"></div></div>
+  <div class="blk"><h2>Værdier</h2><div class="tblw"><table id="cp-tbl"></table></div></div>
+  <div class="blk"><h2>Midt imellem</h2><div id="cp-mid"></div></div>`;
+  this.fa=field('cp-a','Farve A',()=>C.a,v=>{C.a=v;save();me.update()});this.fb=field('cp-b','Farve B',()=>C.b,v=>{C.b=v;save();me.update()});
+  $('#cp-f').append(this.fa,this.fb)},
+ update(){const{a,b}=S.cmp,d=dE76(a,b);this.fa.show();this.fb.show();
+  $('#cp-duo').innerHTML=[a,b].map(c=>`<div style="background:${c};color:${ink(c)}">${c.toUpperCase()}</div>`).join('');
+  $('#cp-de').textContent='ΔE '+d.toFixed(1).replace('.',',');
+  $('#cp-txt').textContent=d<1?'Forskellen kan ikke ses med det blotte øje.':d<2.5?'Kun synlig ved nærmere eftersyn.':d<10?'Tydeligt beslægtede, men forskellen ses med det samme.':d<50?'To forskellige farver.':'Meget forskellige farver.';
+  $('#cp-pills').innerHTML=`<span class="pill">ΔE (CIE76) ${d.toFixed(2)}</span><span class="pill">ΔE (OKLAB) ${(dEok(a,b)*100).toFixed(2)}</span><span class="pill">Kontrast ${contrast(a,b).toFixed(2)}:1</span>`;
+  $('#cp-tbl').innerHTML=`<tr><th>Format</th><th>A</th><th>B</th></tr>`+KINDS.map(k=>`<tr><td>${k.toUpperCase()}</td><td>${esc(fmt(a,k))}</td><td>${esc(fmt(b,k))}</td></tr>`).join('');
+  $('#cp-mid').innerHTML=sws([[mix(a,b,.5,'rgb'),'RGB'],[mix(a,b,.5,'oklab'),'OKLAB'],[mix(a,b,.5,'oklch'),'OKLCH']])}};
+
+T.billede={name:'Billede',n:6,cols:[],build(s){const me=this;s.innerHTML=`
+  <div class="blk"><h2>Farver fra billede</h2><div class="row" style="margin-bottom:12px"><label class="ctl grow">Vælg et billede (eller indsæt med Ctrl/⌘+V)<input type="file" id="im-file" accept="image/*"></label></div>
+   <div class="imgw"><canvas id="im-c" width="900" height="520"></canvas></div><p class="note" id="im-note">Eksempelbillede. Tryk et sted i billedet for at hente farven.</p>
+   <div class="loupe" style="margin-top:10px"><i id="im-dot"></i><span id="im-hex">Peg på billedet</span></div></div>
+  <div class="blk"><h2>Palet fra billedet</h2><div class="row" style="margin-bottom:12px"><label class="ctl grow">Antal farver <output id="im-n-o"></output><input type="range" id="im-n" min="2" max="12" value="6"></label><button class="btn" id="im-pal" type="button">Send til paletbygger</button></div><div id="im-sw"></div></div>`;
+  const cv=$('#im-c'),x=cv.getContext('2d',{willReadFrequently:true});this.cv=cv;this.x=x;
+  const g=x.createLinearGradient(0,0,0,520);g.addColorStop(0,'#1d2b64');g.addColorStop(.55,'#f8a05a');g.addColorStop(1,'#ffd9a0');x.fillStyle=g;x.fillRect(0,0,900,520);
+  x.fillStyle='#fff1c9';x.beginPath();x.arc(640,300,62,0,7);x.fill();
+  [['#3b6e74',370,90],['#24484f',420,60],['#12262d',470,40]].forEach(([c,y,a],k)=>{x.fillStyle=c;x.beginPath();x.moveTo(0,520);for(let i=0;i<=900;i+=10)x.lineTo(i,y+Math.sin(i/(90+k*40)+k*2)*a*.5);x.lineTo(900,520);x.fill()});
+  const at=e=>{const r=cv.getBoundingClientRect(),px=clamp(Math.floor((e.clientX-r.left)*cv.width/r.width),0,cv.width-1),py=clamp(Math.floor((e.clientY-r.top)*cv.height/r.height),0,cv.height-1);try{const d=x.getImageData(px,py,1,1).data;return rgbToHex([d[0],d[1],d[2]])}catch(err){return null}};
+  const peek=h=>{if(!h)return;$('#im-dot').style.background=h;$('#im-hex').textContent=h.toUpperCase()};
+  cv.addEventListener('pointermove',e=>peek(at(e)));
+  cv.addEventListener('click',e=>{const h=at(e);if(h){peek(h);setColor(h);toast(`Valgt ${h.toUpperCase()}`)}});
+  const loadFile=f=>{if(!f)return;const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1200/Math.max(im.width,im.height));cv.width=Math.max(1,R(im.width*k));cv.height=Math.max(1,R(im.height*k));x.drawImage(im,0,0,cv.width,cv.height);$('#im-note').textContent='Tryk et sted i billedet for at hente farven.';me.extract()};im.onerror=()=>toast('Billedet kunne ikke læses');im.src=fr.result};fr.readAsDataURL(f)};
+  $('#im-file').addEventListener('change',e=>loadFile(e.target.files[0]));
+  document.addEventListener('paste',e=>{if(S.tab!=='billede')return;const it=[...(e.clipboardData?.items||[])].find(i=>i.type.startsWith('image/'));if(it)loadFile(it.getAsFile())});
+  $('#im-n').addEventListener('input',e=>{me.n=+e.target.value;me.extract()});
+  $('#im-pal').addEventListener('click',()=>{if(me.cols.length<2)return;S.palette=me.cols.map(hex=>({hex,lock:false}));save();show('palet')});
+  this.extract()},
+ extract(){const cv=this.cv,n=this.n,c=document.createElement('canvas'),k=Math.min(1,90/Math.max(cv.width,cv.height));c.width=Math.max(1,R(cv.width*k));c.height=Math.max(1,R(cv.height*k));
+  $('#im-n-o').textContent=n;let d;try{const x=c.getContext('2d');x.drawImage(cv,0,0,c.width,c.height);d=x.getImageData(0,0,c.width,c.height).data}catch(e){return}
+  const px=[];for(let i=0;i<d.length;i+=4)if(d[i+3]>125)px.push(rgbToOklab([d[i],d[i+1],d[i+2]]));if(!px.length)return;
+  const so=[...px].sort((a,b)=>a[0]-b[0]);let cen=Array.from({length:n},(_,i)=>so[Math.floor((i+.5)/n*so.length)].slice()),cnt=[];
+  for(let it=0;it<12;it++){const sum=cen.map(()=>[0,0,0,0]);for(const p of px){let bi=0,bd=1e9;for(let j=0;j<n;j++){const q=cen[j],dd=(p[0]-q[0])**2+(p[1]-q[1])**2+(p[2]-q[2])**2;if(dd<bd){bd=dd;bi=j}}const t=sum[bi];t[0]+=p[0];t[1]+=p[1];t[2]+=p[2];t[3]++}
+   cen=cen.map((q,j)=>sum[j][3]?[sum[j][0]/sum[j][3],sum[j][1]/sum[j][3],sum[j][2]/sum[j][3]]:q);cnt=sum.map(t=>t[3])}
+  const res=cen.map((q,j)=>({hex:rgbToHex(oklabToRgb(q)),n:cnt[j]})).filter(r=>r.n).sort((a,b)=>b.n-a.n);
+  const seen=new Set();this.cols=res.filter(r=>!seen.has(r.hex)&&seen.add(r.hex)).map(r=>r.hex);
+  $('#im-sw').innerHTML=sws(res.filter(r=>this.cols.includes(r.hex)).map(r=>[r.hex,R(r.n/px.length*100)+'%']))},
+ update(){}};
+
+T.navne={name:'Navne',build(s){s.innerHTML=`
+  <div class="blk"><h2>Nærmeste navne</h2><div id="nm-near"></div></div>
+  <div class="blk"><h2>Alle HTML-farvenavne</h2><div class="row" style="margin-bottom:12px"><label class="ctl grow">Søg på navn eller HEX<input type="text" id="nm-q" placeholder="f.eks. blue eller #ff" autocapitalize="off" spellcheck="false"></label></div><div id="nm-all"></div></div>`;
+  s.append(el(`<div class="blk"><h2>Pantone-opslag</h2><div class="row" style="margin-bottom:12px"><label class="ctl grow">Søg på nummer<input type="text" id="nm-p" inputmode="numeric" placeholder="f.eks. 286 eller 18"></label></div><div id="nm-pms"></div><p class="note">Skærmfarverne er vejledende.</p></div>`));
+  $('#nm-p').addEventListener('input',()=>this.pms());this.pms();
+  $('#nm-q').addEventListener('input',()=>this.list());this.list()},
+ pms(){const q=$('#nm-p').value.trim(),l=PMS.filter(p=>!q||p.name.startsWith(q));
+  $('#nm-pms').innerHTML=l.length?sws(l.slice(0,q?200:48).map(p=>[p.hex,'PMS '+p.name]))+(l.length>48&&!q?`<p class="note">Viser 48 af ${l.length}. Søg på et nummer for at se resten.</p>`:''):`<p class="empty">Intet Pantone-nummer starter med "${esc(q)}".</p>`},
+ list(){const q=$('#nm-q').value.trim().toLowerCase(),l=NAMES.filter(n=>!q||n.name.includes(q)||n.hex.includes(q)).sort((a,b)=>{const x=rgbToHsl(hexToRgb(a.hex)),y=rgbToHsl(hexToRgb(b.hex));return(x[1]<8)-(y[1]<8)||x[0]-y[0]||x[2]-y[2]});
+  $('#nm-all').innerHTML=l.length?sws(l.map(n=>[n.hex,n.name])):`<p class="empty">Ingen navne matcher "${esc(q)}".</p>`},
+ update(){$('#nm-near').innerHTML=sws(nearest(S.color,8).map(n=>[n.hex,n.name+(n.d<.0005?' ✓':'')]))}};
+
+const HUES=[['alle','Alle farver'],['roed','Rød',345,375],['orange','Orange',15,45],['gul','Gul',45,70],['groen','Grøn',70,165],['cyan','Cyan',165,200],['blaa','Blå',200,260],['lilla','Lilla',260,300],['pink','Pink',300,345],['graa','Grå']];
+const TONES=[['alle','Alle',30,100,20,85],['lys','Lys',30,100,70,92],['moerk','Mørk',30,100,10,30],['pastel','Pastel',45,90,80,90],['kraftig','Kraftig',85,100,45,60]];
+T.tilfaeldig={name:'Tilfældig',list:[],build(s){s.innerHTML=`
+  <div class="blk"><h2>Tilfældige farver</h2><div class="row">
+   <label class="ctl">Farvefamilie<select id="rn-hue">${HUES.map(h=>`<option value="${h[0]}">${h[1]}</option>`).join('')}</select></label>
+   <label class="ctl">Tone<select id="rn-tone">${TONES.map(t=>`<option value="${t[0]}">${t[1]}</option>`).join('')}</select></label>
+   <label class="ctl grow">Antal <output id="rn-n-o"></output><input type="range" id="rn-n" min="1" max="48" value="12"></label>
+   <button class="btn pri" id="rn-go" type="button">Generér</button></div></div>
+  <div class="blk"><div id="rn-sw"></div></div>`;
+  ['rn-hue','rn-tone','rn-n'].forEach(id=>$('#'+id).addEventListener('input',()=>this.gen()));$('#rn-go').addEventListener('click',()=>this.gen());this.gen()},
+ gen(){const hu=HUES.find(h=>h[0]===$('#rn-hue').value),t=TONES.find(x=>x[0]===$('#rn-tone').value),n=+$('#rn-n').value;$('#rn-n-o').textContent=n;
+  this.list=Array.from({length:n},()=>{const h=hu.length>2?hu[2]+rnd(hu[3]-hu[2]):rnd(360),s=hu[0]==='graa'?rnd(8):t[2]+rnd(t[3]-t[2]),l=t[4]+rnd(t[5]-t[4]);return rgbToHex(hslToRgb([h,s,l]))});
+  $('#rn-sw').innerHTML=sws(this.list)},
+ update(){}};
+
+T.gemt={name:'Gemt',build(s){const me=this;s.innerHTML=`
+  <div class="blk"><h2>Gemte farver</h2><div id="sv-c"></div></div>
+  <div class="blk"><h2>Gemte paletter</h2><div class="grp" id="sv-p"></div></div>
+  <div class="blk"><h2>Flyt mellem enheder</h2><p class="note" style="margin:0 0 10px">Det gemte ligger kun i denne browser. Kopiér teksten her og indsæt den på den anden enhed for at flytte det.</p>
+   <textarea id="sv-io" aria-label="Gemte data som tekst"></textarea><div class="row" style="margin-top:8px"><button class="btn" id="sv-copy" type="button">Kopiér</button><button class="btn" id="sv-imp" type="button">Indlæs fra teksten</button></div></div>`;
+  $('#sv-c').addEventListener('click',e=>{const x=e.target.closest('.x');if(!x)return;S.saved.colors=S.saved.colors.filter(c=>c!==x.dataset.hex);save();head();me.update()});
+  $('#sv-p').addEventListener('click',e=>{const b=e.target.closest('[data-pa]');if(!b)return;const i=+b.dataset.i,p=S.saved.palettes[i];
+   if(b.dataset.pa==='open'){S.palette=p.colors.map(hex=>({hex,lock:false}));save();show('palet')}
+   else if(b.dataset.pa==='copy')copy(p.colors.join(', ').toUpperCase(),{label:'Palet kopieret'});
+   else{S.saved.palettes.splice(i,1);save();me.update()}});
+  $('#sv-copy').addEventListener('click',()=>copy($('#sv-io').value,{label:'Kopieret',area:$('#sv-io')}));
+  $('#sv-imp').addEventListener('click',()=>{try{const d=JSON.parse($('#sv-io').value);const ok=h=>typeof h==='string'&&/^#[0-9a-f]{6}$/i.test(h);
+    const cols=(d.colors||[]).filter(ok).map(h=>h.toLowerCase()),pals=(d.palettes||[]).filter(p=>p&&Array.isArray(p.colors)&&p.colors.every(ok)).map(p=>({name:String(p.name||'Palet').slice(0,60),colors:p.colors.map(h=>h.toLowerCase())}));
+    S.saved.colors=[...new Set([...S.saved.colors,...cols])];const have=new Set(S.saved.palettes.map(p=>p.name+p.colors.join()));pals.forEach(p=>{if(!have.has(p.name+p.colors.join()))S.saved.palettes.push(p)});
+    save();head();me.update();toast(`Indlæst ${cols.length} farver og ${pals.length} paletter`)}catch(e){toast('Teksten er ikke gyldig. Kopiér den igen fra den anden enhed.')}})},
+ update(){const sv=S.saved;
+  $('#sv-c').innerHTML=sv.colors.length?`<div class="sws">${sv.colors.map(c=>`<div class="saved">${sw(c)}<button type="button" class="x" data-hex="${c}" aria-label="Fjern ${c}">×</button></div>`).join('')}</div>`:`<p class="empty">Ingen gemte farver endnu. Tryk "Gem" øverst for at gemme den aktuelle farve.</p>`;
+  $('#sv-p').innerHTML=sv.palettes.length?sv.palettes.map((p,i)=>`<div class="pal"><header><b>${esc(p.name)}</b><div class="row" style="gap:6px"><button type="button" class="btn sm" data-pa="open" data-i="${i}">Åbn</button><button type="button" class="btn sm" data-pa="copy" data-i="${i}">Kopiér</button><button type="button" class="btn sm" data-pa="del" data-i="${i}">Slet</button></div></header>${sws(p.colors)}</div>`).join(''):`<p class="empty">Ingen gemte paletter endnu. Gem en fra Paletbygger.</p>`;
+  if(document.activeElement!==$('#sv-io'))$('#sv-io').value=JSON.stringify(sv)}};
+
+/* ---------- ramme ---------- */
+const main=$('#main'),tabs=$('#tabs'),built={};
+Object.entries(T).forEach(([id,t])=>{tabs.append(el(`<button type="button" data-tab="${id}">${t.name}</button>`));main.append(el(`<section class="tool" id="t-${id}" hidden></section>`))});
+function head(){const c=S.color,t=$('#cur-t');$('#cur-c').value=c;$('#cur-chip').style.background=c;if(document.activeElement!==t)t.value=c.toUpperCase();
+  document.documentElement.style.setProperty('--cur',c);document.documentElement.style.setProperty('--cur-ink',ink(c));
+  const on=S.saved.colors.includes(c),b=$('#cur-save');b.setAttribute('aria-pressed',on);b.textContent=on?'Gemt':'Gem'}
+function setColor(hex){S.color=hex.toLowerCase();head();T[S.tab].update();save()}
+function show(id){if(!T[id])id='farve';S.tab=id;
+  for(const k in T){$('#t-'+k).hidden=k!==id;const b=$(`[data-tab="${k}"]`,tabs);if(k===id){b.setAttribute('aria-current','page');try{b.scrollIntoView({block:'nearest',inline:'center'})}catch(e){}}else b.removeAttribute('aria-current')}
+  if(!built[id]){T[id].build($('#t-'+id));built[id]=true}
+  T[id].update();save();try{history.replaceState(null,'','#'+id)}catch(e){}}
+tabs.addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b){show(b.dataset.tab);window.scrollTo(0,0)}});
+$('#cur-c').addEventListener('input',e=>setColor(e.target.value));
+$('#cur-t').addEventListener('change',e=>{const p=parse(e.target.value);e.target.blur();if(p)setColor(p);else{head();toast('Kunne ikke læse farven. Prøv f.eks. #3d5afe, rgb(61, 90, 254), cmyk(76, 65, 0, 0) eller pms 286.')}});
+$('#cur-t').addEventListener('keydown',e=>{if(e.key==='Enter')e.target.dispatchEvent(new Event('change'))});
+$('#cur-rnd').addEventListener('click',()=>setColor(rgbToHex(hslToRgb([rnd(360),40+rnd(55),30+rnd(45)]))));
+$('#cur-save').addEventListener('click',()=>{const c=S.color,i=S.saved.colors.indexOf(c);if(i>=0)S.saved.colors.splice(i,1);else S.saved.colors.unshift(c);save();head();if(S.tab==='gemt')T.gemt.update()});
+document.addEventListener('click',e=>{const s=e.target.closest('.sw');if(s)return copy(s.dataset.hex.toUpperCase(),{hex:s.dataset.hex});const c=e.target.closest('[data-copy]');if(c)copy(c.dataset.copy,{label:c.dataset.label})});
+document.addEventListener('keydown',e=>{if(e.code!=='Space'||!['palet','visualiser'].includes(S.tab)||e.target.closest('input,textarea,select,button'))return;e.preventDefault();genPalette();save();T[S.tab].update()});
+$('#toast-use').addEventListener('click',e=>{const h=e.target.dataset.hex;if(h){setColor(h);$('#toast').hidden=true}});
+window.addEventListener('hashchange',()=>{const id=location.hash.slice(1);if(T[id]&&id!==S.tab)show(id)});
+if(!parse(S.color))S.color=DEF.color;
+head();show(T[location.hash.slice(1)]?location.hash.slice(1):S.tab);
+</script>
+</body>
+</html>
