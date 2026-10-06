@@ -120,6 +120,13 @@ a.pill{text-decoration:none}a.pill:hover{border-color:var(--muted)}
 .ph{width:150px;height:270px;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;font-size:10px;box-shadow:0 10px 24px rgb(0 0 0 / .25)}
 .typ{border-radius:12px;padding:26px 20px;overflow:hidden;overflow-wrap:anywhere;outline:1px solid rgb(128 128 128 / .25);outline-offset:-1px}
 .typ>*{margin:0}
+.typ [contenteditable]{outline:0;border-radius:6px;cursor:text;white-space:pre-wrap}
+.typ [contenteditable]:hover{box-shadow:0 0 0 6px rgb(128 128 128 / .12)}
+.typ [contenteditable]:focus{box-shadow:0 0 0 6px rgb(128 128 128 / .12),0 0 0 7px currentColor}
+.tyg{display:grid;gap:26px}
+.tyg>*{min-width:0}
+.tyrange{display:flex;justify-content:space-between}
+@media (min-width:900px){.tyg{grid-template-columns:330px 1fr;grid-template-areas:"a b" "c b";grid-template-rows:auto 1fr}.tya{grid-area:a}.tyb{grid-area:b}.tyc{grid-area:c}}
 .typ p{max-width:62ch}
 .gprev{height:150px;border-radius:12px;box-shadow:inset 0 0 0 1px rgb(128 128 128 / .25)}
 .stops{display:flex;flex-wrap:wrap;gap:8px}
@@ -257,7 +264,7 @@ const DEF={color:'#3d5afe',tab:'farve',steps:10,pmode:'analog',
   grad:{stops:['#3d5afe','#f26a4b'],type:'linear',angle:90,space:'oklch',steps:9},
   mix:{a:'#3d5afe',b:'#f4c95d',ratio:50,space:'oklab',steps:7},
   con:{fg:'#1b2a6b',bg:'#ffffff'},cmp:{a:'#3d5afe',b:'#4263eb'},
-  type:{h:{f:'Bricolage Grotesque',w:700},b:{f:'Figtree',w:400},d:{f:'',w:600},base:17,ratio:1.25,lhB:1.6,lhH:1.1,pal:false,txt:''},
+  type:{h:{f:'Bricolage Grotesque',w:700},u:{f:'Bricolage Grotesque',w:500},b:{f:'Figtree',w:400},con:60,base:17,ratio:1.25,lhB:1.6,lhH:1.1,pal:false},
   saved:{colors:[],palettes:[],types:[]}};
 let S=JSON.parse(JSON.stringify(DEF));
 try{const raw=localStorage.getItem(KEY);if(raw)S={...S,...JSON.parse(raw)}}catch(e){}
@@ -479,75 +486,88 @@ const fontLoaded=new Set();
 function loadFont(f){const m=FMAP[f];if(!m||fontLoaded.has(f))return;fontLoaded.add(f);const l=document.createElement('link');l.rel='stylesheet';l.href=`https://fonts.googleapis.com/css2?family=${encodeURIComponent(f).replace(/%20/g,'+')}:wght@${m.w.join(';')}&display=swap`;document.head.append(l)}
 const nearW=(f,w)=>FMAP[f].w.reduce((a,b)=>Math.abs(b-w)<Math.abs(a-w)?b:a);
 const stack=f=>`"${f}", ${FALL[FMAP[f].c]}`;
-function normType(t){t=t||{};const D=DEF.type,fam=(o,d)=>o&&FMAP[o.f]?o.f:d,hf=fam(t.h,FMAP[D.h.f]?D.h.f:FONTS[0].f),bf=fam(t.b,FMAP[D.b.f]?D.b.f:FONTS[1].f),df=fam(t.d,''),num=(v,d,a,b)=>clamp(+v||d,a,b);
-  return{name:String(t.name||'').slice(0,60),h:{f:hf,w:nearW(hf,+(t.h&&t.h.w)||700)},b:{f:bf,w:nearW(bf,+(t.b&&t.b.w)||400)},d:{f:df,w:nearW(df||bf,+(t.d&&t.d.w)||600)},
-    base:R(num(t.base,17,12,24)),ratio:num(t.ratio,1.25,1.05,1.7),lhB:num(t.lhB,1.6,1,2.2),lhH:num(t.lhH,1.1,.8,1.8),pal:!!t.pal,txt:String(t.txt||'').slice(0,80)}}
-S.type=normType(S.type);
-const TROLES=[['h','Overskrift'],['b','Brødtekst'],['d','Knapper og labels']];
+function normType(t){t=t||{};const D=DEF.type,ok=o=>o&&FMAP[o.f],num=(v,d,a,b)=>clamp(+v||d,a,b);
+  const hf=ok(t.h)?t.h.f:(FMAP[D.h.f]?D.h.f:FONTS[0].f),bf=ok(t.b)?t.b.f:(FMAP[D.b.f]?D.b.f:FONTS[1].f),uf=ok(t.u)?t.u.f:hf;
+  const role=(o,fam,w)=>({f:fam,w:nearW(fam,+(o&&o.w)||w),lock:!!(o&&o.lock)}),tt=t.t||{},tx=k=>String(tt[k]||'').slice(0,k==='b'?600:140);
+  return{name:String(t.name||'').slice(0,60),h:role(t.h,hf,700),u:role(t.u,uf,500),b:role(t.b,bf,400),t:{h:tx('h'),u:tx('u'),b:tx('b')},
+    con:t.con==null||isNaN(+t.con)?60:R(clamp(+t.con,0,100)),base:R(num(t.base,17,12,24)),ratio:num(t.ratio,1.25,1.05,1.7),lhB:num(t.lhB,1.6,1,2.2),lhH:num(t.lhH,1.1,.8,1.8),pal:!!t.pal}}
+S.type=normType(S.type);S.saved.types=(S.saved.types||[]).map(normType);
+const TROLES=[['h','Overskrift'],['u','Underoverskrift'],['b','Brødtekst']];
+const TTXT={h:'Skrifttyper der klæder hinanden',u:'Et godt par deler stemning, men har tydelig kontrast',b:'Tryk Generér for et nyt forslag. Lås den skrifttype du kan lide, og lad resten skifte. Skriv din egen tekst direkte her, fx firmanavn og payoff, og se den med æ, ø og å og tal som 1.234,50 kr.'};
 const TCATS=[['','Alle'],['s','Sans serif'],['e','Serif'],['d','Display'],['h','Håndskrift'],['m','Monospace']];
 const RATIOS=[[1.067,'1,067 · lille sekund'],[1.125,'1,125 · stor sekund'],[1.2,'1,2 · lille terts'],[1.25,'1,25 · stor terts'],[1.333,'1,333 · kvart'],[1.414,'1,414 · tritonus'],[1.5,'1,5 · kvint'],[1.618,'1,618 · gyldne snit']];
-T.typografi={name:'Typografi',flt:{h:{c:'',q:''},b:{c:'',q:''},d:{c:'',q:''}},
- fam(r){return r==='d'&&!S.type.d.f?S.type.b.f:S.type[r].f},
+const TXT_S='Inter,Roboto,Open Sans,Lato,Source Sans 3,Nunito,Nunito Sans,Work Sans,DM Sans,Figtree,Manrope,Karla,Rubik,Mulish,IBM Plex Sans,Noto Sans,PT Sans,Poppins,Montserrat,Raleway,Outfit,Plus Jakarta Sans,Public Sans,Libre Franklin,Hind,Cabin,Barlow,Heebo,Assistant,Albert Sans,Instrument Sans,Be Vietnam Pro,Red Hat Text,Atkinson Hyperlegible,Lexend,Urbanist,Sora,Onest,Geist,Schibsted Grotesk,Hanken Grotesk,Archivo,Fira Sans,Ubuntu,Quicksand'.split(',').filter(x=>FMAP[x]);
+const TXT_E='Lora,Merriweather,Source Serif 4,PT Serif,Libre Baskerville,EB Garamond,Crimson Pro,Crimson Text,Noto Serif,Bitter,Spectral,Newsreader,Literata,Cormorant Garamond,Cardo,Vollkorn,Zilla Slab,Roboto Slab,IBM Plex Serif,Gelasio,Fraunces,Alegreya,Libre Caslon Text,Domine,Frank Ruhl Libre,Old Standard TT,Roboto Serif,Lusitana,Neuton'.split(',').filter(x=>FMAP[x]);
+const HEAD_S=[...TXT_S,...'Bricolage Grotesque,Space Grotesk,Oswald,Syne,Unbounded,Familjen Grotesk,Big Shoulders Display,Anton,Archivo Black,League Spartan,Josefin Sans,Epilogue,Bebas Neue'.split(',').filter(x=>FMAP[x])];
+const HEAD_E=[...TXT_E,...'Playfair Display,DM Serif Display,Abril Fatface,Cormorant,Young Serif,Instrument Serif,Bodoni Moda,Prata,Yeseva One,Cinzel,Marcellus,Rozha One,Alfa Slab One,Arvo'.split(',').filter(x=>FMAP[x])];
+T.typografi={name:'Typografi',flt:{h:{c:'',q:''},u:{c:'',q:''},b:{c:'',q:''}},
  list(r){const{c,q}=this.flt[r];return FONTS.filter(x=>(!c||x.c===c)&&(!q||x.f.toLowerCase().includes(q)))},
- build(s){const me=this;s.innerHTML=`
-  <div class="blk"><h2>Typografipakke</h2><div class="row"><button class="btn pri" id="ty-sug" type="button">Foreslå et par</button><label class="ctl grow">Egen overskrift i eksemplet<input type="text" id="ty-txt" placeholder="Typografi bærer stemmen" maxlength="80"></label></div></div>
-  ${TROLES.map(([r,t])=>`<div class="blk"><h2>${t}</h2><div class="row">
-    <label class="ctl">Kategori<select id="ty-${r}-c">${TCATS.map(([v,n])=>`<option value="${v}">${n}</option>`).join('')}</select></label>
+ gen(){const Y=S.type,c=Y.con,disp=k=>FONTS.filter(x=>x.c===k&&!/^Noto|Material|Icons|Barcode/.test(x.f)).slice(0,k==='d'?140:60).map(x=>x.f);
+  const pick=(l,not=[])=>{let v,i=0;do{v=l[Math.floor(rnd(l.length))]}while(not.includes(v)&&++i<30);return v};
+  const set=(r,fam,w)=>{if(!Y[r].lock)Y[r]={f:fam,w:nearW(fam,w),lock:false}};
+  set('b',pick(rnd(1)<.7?TXT_S:TXT_E),400);
+  const B=Y.b.f,bc=FMAP[B].c==='e'?'e':'s',same=bc==='s'?HEAD_S:HEAD_E,opp=bc==='s'?HEAD_E:HEAD_S,oppTxt=bc==='s'?TXT_E:TXT_S;
+  if(c<20)set('h',B,700);else if(c<45)set('h',pick(same,[B]),700);else if(c<75)set('h',pick(opp,[B]),700);else set('h',pick(disp(rnd(1)<.2?'h':'d'),[B]),800);
+  const H=Y.h.f;
+  if(c<20)set('u',B,600);else if(c<45)set('u',H,500);else if(c<75)rnd(1)<.5?set('u',B,600):set('u',H,400);else set('u',pick(oppTxt,[B,H]),500);
+  save()},
+ build(s){const me=this;s.innerHTML=`<div class="tyg">
+  <div class="blk tya"><h2>Typografipar</h2><button class="btn pri" id="ty-gen" type="button" style="width:100%;padding:13px;font-size:16px">Generér</button>
+   <label class="ctl" style="margin-top:14px">Kontrast<input type="range" id="ty-con" min="0" max="100"><span class="tyrange"><span>Mere ens</span><span>Mere kontrast</span></span></label>
+   <p class="note">Mellemrumstasten genererer også. Låste skrifttyper bliver stående, og en skrifttype du selv vælger, låses automatisk.</p></div>
+  <div class="blk tyb"><div class="typ" id="ty-prev">${TROLES.map(([r,t])=>`<div id="ty-t-${r}" contenteditable="true" spellcheck="false" role="textbox" aria-label="${t}, eksempeltekst"></div>`).join('')}</div><p class="note">Tryk på teksten for at skrive din egen.</p></div>
+  <div class="tyc grp" style="gap:22px">${TROLES.map(([r,t])=>`<div class="blk"><h2>${t}</h2><div class="row">
+    <label class="ctl grow">Skrifttype<select id="ty-${r}-f"></select></label><label class="ctl">Vægt<select id="ty-${r}-w"></select></label><button class="btn" id="ty-${r}-l" type="button" aria-pressed="false">Lås</button></div>
+   <div class="row" style="margin-top:8px"><label class="ctl">Kategori<select id="ty-${r}-c">${TCATS.map(([v,n])=>`<option value="${v}">${n}</option>`).join('')}</select></label>
     <label class="ctl grow">Søg<input type="text" id="ty-${r}-q" placeholder="f.eks. play" autocapitalize="off" spellcheck="false"></label>
-    <label class="ctl grow">Skrifttype<select id="ty-${r}-f"></select></label>
-    <label class="ctl">Vægt<select id="ty-${r}-w"></select></label>
-    <button class="btn" id="ty-${r}-p" type="button" aria-label="Forrige skrifttype">←</button><button class="btn" id="ty-${r}-n" type="button" aria-label="Næste skrifttype">→</button><button class="btn" id="ty-${r}-r" type="button">Tilfældig</button></div></div>`).join('')}
+    <button class="btn" id="ty-${r}-p" type="button" aria-label="Forrige skrifttype">←</button><button class="btn" id="ty-${r}-n" type="button" aria-label="Næste skrifttype">→</button></div></div>`).join('')}</div></div>
   <div class="blk"><h2>Størrelser</h2><div class="row">
     <label class="ctl grow">Grundstørrelse <output id="ty-base-o"></output><input type="range" id="ty-base" min="12" max="24"></label>
     <label class="ctl">Skala<select id="ty-ratio">${RATIOS.map(([v,n])=>`<option value="${v}">${n}</option>`).join('')}</select></label>
     <label class="ctl grow">Linjehøjde, brødtekst <output id="ty-lhB-o"></output><input type="range" id="ty-lhB" min="1" max="2.2" step="0.05"></label>
     <label class="ctl grow">Linjehøjde, overskrifter <output id="ty-lhH-o"></output><input type="range" id="ty-lhH" min="0.8" max="1.8" step="0.05"></label>
     <label class="ctl" style="flex-direction:row;align-items:center;gap:8px;color:var(--ink)"><input type="checkbox" id="ty-pal"> Brug farver fra Paletbygger</label></div></div>
-  <div class="blk"><h2>Eksempel</h2><div id="ty-prev"></div></div>
   <div class="blk"><h2>Skala</h2><div class="tblw"><table id="ty-tbl"></table></div></div>
   <div class="blk"><h2>Gem</h2><div class="row"><label class="ctl grow">Navn<input type="text" id="ty-name" placeholder="Min typografipakke" maxlength="60"></label><button class="btn pri" id="ty-save" type="button">Gem pakke</button></div></div>
   <div class="blk"><h2>Google Fonts-link</h2><textarea id="ty-link" readonly aria-label="Google Fonts-link" style="min-height:90px"></textarea><div class="row" style="margin-top:8px"><button class="btn" id="ty-link-c" type="button">Kopiér link</button></div><p class="note">Sæt linket ind i sidens &lt;head&gt;. Skrifttyperne hentes direkte fra Google Fonts og ligger ikke på din egen side.</p><div class="pills" id="ty-gf" style="margin-top:10px"></div></div>
   <div class="blk"><h2>CSS</h2><textarea id="ty-css" readonly aria-label="CSS" style="min-height:260px"></textarea><div class="row" style="margin-top:8px"><button class="btn" id="ty-css-c" type="button">Kopiér CSS</button></div></div>`;
-  s.addEventListener('input',e=>{const m=e.target.id.match(/^ty-([hbd])-([cqfw])$/),Y=S.type;
+  TROLES.forEach(([r])=>{const e=$('#ty-t-'+r),max=r==='b'?600:140;
+   e.addEventListener('input',()=>{S.type.t[r]=e.textContent.slice(0,max);save()});
+   e.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();e.blur()}});
+   e.addEventListener('paste',ev=>{ev.preventDefault();const t=(ev.clipboardData&&ev.clipboardData.getData('text/plain')||'').replace(/\s+/g,' ');try{document.execCommand('insertText',false,t)}catch(x){}});
+   e.addEventListener('blur',()=>{const v=e.textContent.replace(/\s+/g,' ').trim().slice(0,max);S.type.t[r]=v===TTXT[r]?'':v;save();e.textContent=v||TTXT[r]})});
+  s.addEventListener('input',e=>{const m=e.target.id.match(/^ty-([hub])-([cqfw])$/),Y=S.type;
    if(m){const[,r,k]=m,v=e.target.value;if(k==='c'||k==='q'){me.flt[r][k]=v.trim().toLowerCase();me.fill(r)}else if(k==='f')me.setFam(r,v);else{Y[r].w=+v;save();me.out()}return}
-   const id=e.target.id;if(id==='ty-txt')Y.txt=e.target.value;else if(id==='ty-base')Y.base=+e.target.value;else if(id==='ty-ratio')Y.ratio=+e.target.value;else if(id==='ty-lhB')Y.lhB=+e.target.value;else if(id==='ty-lhH')Y.lhH=+e.target.value;else if(id==='ty-pal')Y.pal=e.target.checked;else return;save();me.out()});
-  s.addEventListener('click',e=>{const m=(e.target.id||'').match(/^ty-([hbd])-([pnr])$/);if(!m)return;const[,r,k]=m,l=me.list(r);if(!l.length)return toast('Ingen skrifttyper matcher søgningen');
-   let i=l.findIndex(x=>x.f===me.fam(r));i=k==='r'?Math.floor(rnd(l.length)):i<0?0:(i+(k==='n'?1:-1)+l.length)%l.length;me.setFam(r,l[i].f);me.fill(r)});
-  $('#ty-sug').addEventListener('click',()=>{const pick=(cs,n)=>{const l=FONTS.filter(x=>cs.includes(x.c)).slice(0,n);return l[Math.floor(rnd(l.length))].f};
-   const serifHead=rnd(1)<.5,h=pick(serifHead?['e','d']:['s','d'],160);let b;do{b=pick(serifHead?['s']:['s','e'],70)}while(b===h);
-   const Y=S.type;Y.h={f:h,w:nearW(h,700)};Y.b={f:b,w:nearW(b,400)};Y.d={f:'',w:nearW(b,600)};save();me.update()});
+   const id=e.target.id;if(id==='ty-con')Y.con=+e.target.value;else if(id==='ty-base')Y.base=+e.target.value;else if(id==='ty-ratio')Y.ratio=+e.target.value;else if(id==='ty-lhB')Y.lhB=+e.target.value;else if(id==='ty-lhH')Y.lhH=+e.target.value;else if(id==='ty-pal')Y.pal=e.target.checked;else return;save();me.out()});
+  s.addEventListener('click',e=>{const m=(e.target.id||'').match(/^ty-([hub])-([pnl])$/);if(!m)return;const[,r,k]=m;
+   if(k==='l'){S.type[r].lock=!S.type[r].lock;save();return me.out()}
+   const l=me.list(r);if(!l.length)return toast('Ingen skrifttyper matcher søgningen');
+   let i=l.findIndex(x=>x.f===S.type[r].f);i=i<0?0:(i+(k==='n'?1:-1)+l.length)%l.length;me.setFam(r,l[i].f);me.fill(r)});
+  $('#ty-gen').addEventListener('click',()=>{me.gen();me.update()});
   $('#ty-save').addEventListener('click',()=>{const name=$('#ty-name').value.trim()||`Pakke ${S.saved.types.length+1}`;S.saved.types.unshift({...JSON.parse(JSON.stringify(S.type)),name});save();$('#ty-name').value='';toast(`Gemt som "${name}"`)});
   $('#ty-link-c').addEventListener('click',()=>copy($('#ty-link').value,{label:'Link kopieret',area:$('#ty-link')}));
   $('#ty-css-c').addEventListener('click',()=>copy($('#ty-css').value,{label:'CSS kopieret',area:$('#ty-css')}))},
- setFam(r,f){const Y=S.type;Y[r].f=f;Y[r].w=nearW(this.fam(r),Y[r].w);if(r==='b'&&!Y.d.f)Y.d.w=nearW(f,Y.d.w);save();this.weights(r);if(r==='b')this.weights('d');this.out()},
- weights(r){const Y=S.type,w=$(`#ty-${r}-w`);w.innerHTML=FMAP[this.fam(r)].w.map(x=>`<option value="${x}">${x}</option>`).join('');w.value=Y[r].w},
- fill(r){const Y=S.type,l=this.list(r),cur=Y[r].f,sel=$(`#ty-${r}-f`);
-  sel.innerHTML=(r==='d'?'<option value="">Samme som brødtekst</option>':'')+(cur&&!l.some(x=>x.f===cur)?`<option value="${cur}">${cur}</option>`:'')+l.map(x=>`<option value="${x.f}">${x.f}</option>`).join('');sel.value=cur;this.weights(r)},
- out(){const Y=S.type,H=this.fam('h'),B=this.fam('b'),D=this.fam('d');[H,B,D].forEach(loadFont);
+ setFam(r,fam){const Y=S.type;Y[r].f=fam;Y[r].w=nearW(fam,Y[r].w);Y[r].lock=true;save();this.weights(r);this.out()},
+ weights(r){const Y=S.type,w=$(`#ty-${r}-w`);w.innerHTML=FMAP[Y[r].f].w.map(x=>`<option value="${x}">${x}</option>`).join('');w.value=Y[r].w},
+ fill(r){const l=this.list(r),cur=S.type[r].f,sel=$(`#ty-${r}-f`);
+  sel.innerHTML=(l.some(x=>x.f===cur)?'':`<option value="${cur}">${cur}</option>`)+l.map(x=>`<option value="${x.f}">${x.f}</option>`).join('');sel.value=cur;this.weights(r)},
+ out(){const Y=S.type,H=Y.h.f,U=Y.u.f,B=Y.b.f;[H,U,B].forEach(loadFont);
   const b=Y.base,q=Y.ratio,sz={h1:b*q**4,h2:b*q**3,h3:b*q**2,h4:b*q,base:b,sm:b/q},px=v=>(R(v*10)/10)+'px',rem=v=>(v/16).toFixed(3).replace(/0+$/,'').replace(/\.$/,'')+'rem';
   $('#ty-base-o').textContent=b+' px';$('#ty-lhB-o').textContent=Y.lhB.toFixed(2);$('#ty-lhH-o').textContent=Y.lhH.toFixed(2);
-  let bg='var(--surface)',tx='var(--ink)',ac=S.color;
-  if(Y.pal){const L=S.palette.map(p=>p.hex).sort((x,y)=>lum(y)-lum(x));bg=L[0];tx=on(bg,L[L.length-1]);ac=L.slice(1,-1).sort((x,y)=>chroma(y)-chroma(x))[0]||L[L.length-1]}
-  const hs=(k,cap)=>`font-family:${stack(H)};font-weight:${Y.h.w};line-height:${Y.lhH};font-size:${cap?`min(${px(sz[k])},${cap})`:px(sz[k])};margin-top:.6em`.replace(/"/g,"'");
-  const fb=stack(B).replace(/"/g,"'"),fd=stack(D).replace(/"/g,"'");
-  $('#ty-prev').innerHTML=`<div class="typ" style="background:${bg};color:${tx};font-family:${fb};font-weight:${Y.b.w};font-size:${px(b)};line-height:${Y.lhB}">
-   <div style="font-family:${fd};font-weight:${Y.d.w};font-size:${px(sz.sm)};letter-spacing:.1em;text-transform:uppercase;opacity:.75">Efterår 2026 · Nr. 4</div>
-   <h1 style="${hs('h1','15vw')}">${esc(Y.txt||'Typografi bærer stemmen')}</h1>
-   <p style="margin-top:.8em">Brødteksten skal kunne læses længe uden at trætte. Her ser du, om skriften holder til et helt afsnit med æ, ø og å, tal som 1.234,50 kr. og <b>fremhævet tekst</b> midt i en sætning.</p>
-   <h2 style="${hs('h2','11vw')}">Par der passer sammen</h2>
-   <p style="margin-top:.6em">En tydelig overskrift og en rolig brødtekst giver hierarki uden at larme.</p>
-   <h3 style="${hs('h3','9vw')}">Mellemrubrik i tredje niveau</h3>
-   <h4 style="${hs('h4')}">Fjerde niveau til små afsnit</h4>
-   <p style="font-size:${px(sz.sm)};opacity:.75;margin-top:.6em">Lille tekst til billedtekster og fodnoter.</p>
-   <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:1.2em;font-family:${fd};font-weight:${Y.d.w};font-size:${px(sz.sm)}"><span style="background:${ac};color:${ink(ac)};border-radius:99px;padding:.7em 1.3em">Læs artiklen</span><span style="box-shadow:inset 0 0 0 1px currentColor;border-radius:99px;padding:.7em 1.3em">Se alle</span></div></div>`;
-  $('#ty-tbl').innerHTML='<tr><th>Niveau</th><th>Størrelse</th><th>Skrifttype</th><th>Vægt</th></tr>'+[['H1','h1',H,Y.h.w],['H2','h2',H,Y.h.w],['H3','h3',H,Y.h.w],['H4','h4',H,Y.h.w],['Brødtekst','base',B,Y.b.w],['Lille','sm',B,Y.b.w],['Knapper og labels','sm',D,Y.d.w]].map(([n,k,f,w])=>`<tr><td>${n}</td><td>${px(sz[k])} · ${rem(sz[k])}</td><td>${f}</td><td>${w}</td></tr>`).join('');
-  const need={};const add=(f,w)=>{(need[f]=need[f]||new Set()).add(w)};add(H,Y.h.w);add(B,Y.b.w);add(B,nearW(B,700));add(D,Y.d.w);
-  const qs=Object.entries(need).map(([f,ws])=>`family=${encodeURIComponent(f).replace(/%20/g,'+')}:wght@${[...ws].sort((x,y)=>x-y).join(';')}`).join('&');
-  $('#ty-gf').innerHTML=Object.keys(need).map(f=>`<a class="pill" href="https://fonts.google.com/specimen/${encodeURIComponent(f).replace(/%20/g,'+')}" target="_blank" rel="noopener">${f} på Google Fonts ↗</a>`).join('');
+  let bg='var(--surface)',tx='var(--ink)';
+  if(Y.pal){const L=S.palette.map(p=>p.hex).sort((x,y)=>lum(y)-lum(x));bg=L[0];tx=on(bg,L[L.length-1])}
+  const pv=$('#ty-prev');pv.style.background=bg;pv.style.color=tx;
+  [['h',H,`min(${px(sz.h1)},15vw)`,Y.lhH,'0'],['u',U,`min(${px(sz.h3)},9vw)`,Math.max(Y.lhH,1.2),'.5em'],['b',B,px(b),Y.lhB,'1.1em']].forEach(([r,fam,size,lh,mt])=>{const e=$('#ty-t-'+r);
+   e.style.cssText=`font-family:${stack(fam)};font-weight:${Y[r].w};font-size:${size};line-height:${lh};margin-top:${mt};max-width:${r==='b'?'62ch':'none'}`;
+   if(document.activeElement!==e)e.textContent=Y.t[r]||TTXT[r];
+   const lb=$(`#ty-${r}-l`);lb.setAttribute('aria-pressed',Y[r].lock);lb.textContent=Y[r].lock?'Låst':'Lås'});
+  $('#ty-tbl').innerHTML='<tr><th>Niveau</th><th>Størrelse</th><th>Skrifttype</th><th>Vægt</th></tr>'+[['H1','h1',H,Y.h.w],['H2','h2',U,Y.u.w],['H3','h3',U,Y.u.w],['H4','h4',U,Y.u.w],['Brødtekst','base',B,Y.b.w],['Lille','sm',B,Y.b.w]].map(([n,k,fam,w])=>`<tr><td>${n}</td><td>${px(sz[k])} · ${rem(sz[k])}</td><td>${fam}</td><td>${w}</td></tr>`).join('');
+  const need={};const add=(fam,w)=>{(need[fam]=need[fam]||new Set()).add(w)};add(H,Y.h.w);add(U,Y.u.w);add(B,Y.b.w);add(B,nearW(B,700));
+  const qs=Object.entries(need).map(([fam,ws])=>`family=${encodeURIComponent(fam).replace(/%20/g,'+')}:wght@${[...ws].sort((x,y)=>x-y).join(';')}`).join('&');
+  $('#ty-gf').innerHTML=Object.keys(need).map(fam=>`<a class="pill" href="https://fonts.google.com/specimen/${encodeURIComponent(fam).replace(/%20/g,'+')}" target="_blank" rel="noopener">${fam} på Google Fonts ↗</a>`).join('');
   $('#ty-link').value=`<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?${qs}&display=swap" rel="stylesheet">`;
-  $('#ty-css').value=`:root {\n  --font-heading: ${stack(H)};\n  --font-body: ${stack(B)};\n  --font-detail: ${stack(D)};\n  --text-sm: ${rem(sz.sm)};\n  --text-base: ${rem(sz.base)};\n  --text-h4: ${rem(sz.h4)};\n  --text-h3: ${rem(sz.h3)};\n  --text-h2: ${rem(sz.h2)};\n  --text-h1: ${rem(sz.h1)};\n  --leading-body: ${Y.lhB};\n  --leading-heading: ${Y.lhH};\n}\nbody {\n  font-family: var(--font-body);\n  font-weight: ${Y.b.w};\n  font-size: var(--text-base);\n  line-height: var(--leading-body);\n}\nh1, h2, h3, h4 {\n  font-family: var(--font-heading);\n  font-weight: ${Y.h.w};\n  line-height: var(--leading-heading);\n}\nh1 { font-size: var(--text-h1); }\nh2 { font-size: var(--text-h2); }\nh3 { font-size: var(--text-h3); }\nh4 { font-size: var(--text-h4); }\nsmall { font-size: var(--text-sm); }\nbutton, label {\n  font-family: var(--font-detail);\n  font-weight: ${Y.d.w};\n}`},
- update(){const Y=S.type;TROLES.forEach(([r])=>this.fill(r));$('#ty-base').value=Y.base;$('#ty-ratio').value=String(RATIOS.reduce((a,x)=>Math.abs(x[0]-Y.ratio)<Math.abs(a-Y.ratio)?x[0]:a,1.25));$('#ty-lhB').value=Y.lhB;$('#ty-lhH').value=Y.lhH;$('#ty-pal').checked=Y.pal;
-  const t=$('#ty-txt');if(document.activeElement!==t)t.value=Y.txt;this.out()}};
+  $('#ty-css').value=`:root {\n  --font-heading: ${stack(H)};\n  --font-subheading: ${stack(U)};\n  --font-body: ${stack(B)};\n  --text-sm: ${rem(sz.sm)};\n  --text-base: ${rem(sz.base)};\n  --text-h4: ${rem(sz.h4)};\n  --text-h3: ${rem(sz.h3)};\n  --text-h2: ${rem(sz.h2)};\n  --text-h1: ${rem(sz.h1)};\n  --leading-body: ${Y.lhB};\n  --leading-heading: ${Y.lhH};\n}\nbody {\n  font-family: var(--font-body);\n  font-weight: ${Y.b.w};\n  font-size: var(--text-base);\n  line-height: var(--leading-body);\n}\nh1 {\n  font-family: var(--font-heading);\n  font-weight: ${Y.h.w};\n  font-size: var(--text-h1);\n  line-height: var(--leading-heading);\n}\nh2, h3, h4 {\n  font-family: var(--font-subheading);\n  font-weight: ${Y.u.w};\n  line-height: var(--leading-heading);\n}\nh2 { font-size: var(--text-h2); }\nh3 { font-size: var(--text-h3); }\nh4 { font-size: var(--text-h4); }\nsmall { font-size: var(--text-sm); }`},
+ update(){const Y=S.type;TROLES.forEach(([r])=>this.fill(r));$('#ty-con').value=Y.con;$('#ty-base').value=Y.base;$('#ty-ratio').value=String(RATIOS.reduce((a,x)=>Math.abs(x[0]-Y.ratio)<Math.abs(a-Y.ratio)?x[0]:a,1.25));$('#ty-lhB').value=Y.lhB;$('#ty-lhH').value=Y.lhH;$('#ty-pal').checked=Y.pal;this.out()}};
 
 const TW=[[50,.97,.15],[100,.93,.3],[200,.87,.5],[300,.79,.75],[400,.7,.95],[500,.62,1],[600,.53,1],[700,.45,.9],[800,.37,.75],[900,.29,.6],[950,.21,.45]];
 const twScale=hex=>{const[,C,H]=toLch(rgbToOklab(hexToRgb(hex)));return TW.map(([k,l,f])=>[rgbToHex(oklabToRgb(fromLch([l,C*f,H]))),String(k)])};
@@ -707,7 +727,7 @@ T.gemt={name:'Gemt',build(s){const me=this;s.innerHTML=`
  update(){const sv=S.saved;
   $('#sv-c').innerHTML=sv.colors.length?`<div class="sws">${sv.colors.map(c=>`<div class="saved">${sw(c)}<button type="button" class="x" data-hex="${c}" aria-label="Fjern ${c}">×</button></div>`).join('')}</div>`:`<p class="empty">Ingen gemte farver endnu. Tryk "Gem" øverst for at gemme den aktuelle farve.</p>`;
   $('#sv-p').innerHTML=sv.palettes.length?sv.palettes.map((p,i)=>`<div class="pal"><header><b>${esc(p.name)}</b><div class="row" style="gap:6px"><button type="button" class="btn sm" data-pa="open" data-i="${i}">Åbn</button><button type="button" class="btn sm" data-pa="copy" data-i="${i}">Kopiér</button><button type="button" class="btn sm" data-pa="del" data-i="${i}">Slet</button></div></header>${sws(p.colors)}</div>`).join(''):`<p class="empty">Ingen gemte paletter endnu. Gem en fra Paletbygger.</p>`;
-  $('#sv-t').innerHTML=sv.types.length?sv.types.map((t,i)=>`<div class="pal"><header><b>${esc(t.name)}</b><div class="row" style="gap:6px"><button type="button" class="btn sm" data-ta="open" data-i="${i}">Åbn</button><button type="button" class="btn sm" data-ta="del" data-i="${i}">Slet</button></div></header><span class="note" style="margin:0">${esc(t.h.f)} ${t.h.w} · ${esc(t.b.f)} ${t.b.w}${t.d&&t.d.f?' · '+esc(t.d.f)+' '+t.d.w:''} · ${t.base} px · skala ${t.ratio}</span></div>`).join(''):`<p class="empty">Ingen gemte typografipakker endnu. Gem en fra Typografi.</p>`;
+  $('#sv-t').innerHTML=sv.types.length?sv.types.map((t,i)=>`<div class="pal"><header><b>${esc(t.name)}</b><div class="row" style="gap:6px"><button type="button" class="btn sm" data-ta="open" data-i="${i}">Åbn</button><button type="button" class="btn sm" data-ta="del" data-i="${i}">Slet</button></div></header><span class="note" style="margin:0">${esc(t.h.f)} ${t.h.w} · ${esc(t.u.f)} ${t.u.w} · ${esc(t.b.f)} ${t.b.w} · ${t.base} px · skala ${t.ratio}</span></div>`).join(''):`<p class="empty">Ingen gemte typografipakker endnu. Gem en fra Typografi.</p>`;
   if(document.activeElement!==$('#sv-io'))$('#sv-io').value=JSON.stringify(sv)}};
 
 /* ---------- ramme ---------- */
@@ -728,7 +748,7 @@ $('#cur-t').addEventListener('keydown',e=>{if(e.key==='Enter')e.target.dispatchE
 $('#cur-rnd').addEventListener('click',()=>setColor(rgbToHex(hslToRgb([rnd(360),40+rnd(55),30+rnd(45)]))));
 $('#cur-save').addEventListener('click',()=>{const c=S.color,i=S.saved.colors.indexOf(c);if(i>=0)S.saved.colors.splice(i,1);else S.saved.colors.unshift(c);save();head();if(S.tab==='gemt')T.gemt.update()});
 document.addEventListener('click',e=>{const s=e.target.closest('.sw');if(s)return copy(s.dataset.hex.toUpperCase(),{hex:s.dataset.hex});const c=e.target.closest('[data-copy]');if(c)copy(c.dataset.copy,{label:c.dataset.label})});
-document.addEventListener('keydown',e=>{if(e.code!=='Space'||!['palet','visualiser'].includes(S.tab)||e.target.closest('input,textarea,select,button'))return;e.preventDefault();genPalette();save();T[S.tab].update()});
+document.addEventListener('keydown',e=>{if(e.code!=='Space'||!['palet','visualiser','typografi'].includes(S.tab)||e.target.closest('input,textarea,select,button,[contenteditable]'))return;e.preventDefault();if(S.tab==='typografi')T.typografi.gen();else{genPalette();save()}T[S.tab].update()});
 $('#toast-use').addEventListener('click',e=>{const h=e.target.dataset.hex;if(h){setColor(h);$('#toast').hidden=true}});
 window.addEventListener('hashchange',()=>{const id=location.hash.slice(1);if(T[id]&&id!==S.tab)show(id)});
 if(!parse(S.color))S.color=DEF.color;
