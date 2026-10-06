@@ -1,0 +1,73 @@
+<style>
+  body { font: 13px/1.45 Inter, system-ui, sans-serif; margin: 0; padding: 14px; color: var(--figma-color-text, #222); background: var(--figma-color-bg, #fff); }
+  h1 { font-size: 14px; margin: 0 0 4px; }
+  p { margin: 0 0 10px; color: var(--figma-color-text-secondary, #666); }
+  textarea, input[type=text] { width: 100%; box-sizing: border-box; font: 12px/1.4 ui-monospace, Menlo, monospace; border: 1px solid var(--figma-color-border, #ccc); border-radius: 6px; padding: 7px 8px; background: var(--figma-color-bg-secondary, #f5f5f5); color: inherit; }
+  textarea { height: 86px; resize: vertical; }
+  input[type=text] { font-family: inherit; font-size: 13px; }
+  label { display: block; margin: 10px 0 4px; font-weight: 600; }
+  .c { margin-top: 10px; }
+  .strip { display: flex; height: 22px; border-radius: 5px; overflow: hidden; margin-top: 5px; }
+  .strip i { flex: 1; }
+  .opts label { display: flex; gap: 8px; align-items: center; font-weight: 400; margin: 6px 0; }
+  button { width: 100%; margin-top: 12px; padding: 9px; border: 0; border-radius: 6px; font: 600 13px Inter, system-ui, sans-serif; cursor: pointer; background: var(--figma-color-bg-brand, #0d99ff); color: var(--figma-color-text-onbrand, #fff); }
+  button:disabled { opacity: .45; cursor: default; }
+  #msg { margin-top: 10px; min-height: 18px; }
+  #msg.err { color: var(--figma-color-text-danger, #c00); }
+</style>
+<h1>Palet fra Stilværksted</h1>
+<p>Tryk "Kopiér til Figma" i Paletbygger på stilvaerksted.vercel.app, og indsæt teksten her.</p>
+<textarea id="src" placeholder='Indsæt her (Ctrl/⌘+V)'></textarea>
+<div id="form" hidden>
+  <label for="name">Navn på samlingen</label>
+  <input type="text" id="name" maxlength="60">
+  <div id="list"></div>
+  <div class="opts">
+    <label><input type="checkbox" id="o-vars" checked> Opret som variabler</label>
+    <label><input type="checkbox" id="o-styles" checked> Opret som farvestile</label>
+    <label><input type="checkbox" id="o-board" checked> Tegn en oversigt på lærredet</label>
+  </div>
+  <button id="go">Opret i Figma</button>
+</div>
+<div id="msg"></div>
+<script>
+  const HEX = /^#[0-9a-f]{6}$/i, ORDER = ['50','100','200','300','400','500','600','700','800','900','950'];
+  const $ = (id) => document.getElementById(id);
+  let colors = [];
+  const say = (t, err) => { $('msg').textContent = t; $('msg').className = err ? 'err' : ''; };
+  function read() {
+    colors = []; $('form').hidden = true; $('list').textContent = '';
+    const raw = $('src').value.trim(); if (!raw) return say('');
+    let d; try { d = JSON.parse(raw); } catch (e) { return say('Teksten kan ikke læses. Kopiér den igen fra Stilværksted.', true); }
+    if (!d || !Array.isArray(d.colors)) return say('Det ligner ikke en palet fra Stilværksted.', true);
+    colors = d.colors.filter((c) => c && HEX.test(c.hex)).map((c, i) => {
+      const steps = [['base', c.hex]];
+      ORDER.forEach((k) => { if (c.shades && HEX.test(c.shades[k])) steps.push([k, c.shades[k]]); });
+      return { name: String(c.name || 'farve-' + (i + 1)), steps };
+    });
+    if (!colors.length) return say('Paletten indeholder ingen gyldige farver.', true);
+    $('name').value = String(d.name || 'Stilværksted');
+    colors.forEach((c, i) => {
+      const w = document.createElement('div'); w.className = 'c';
+      const inp = document.createElement('input'); inp.type = 'text'; inp.value = c.name; inp.maxLength = 40;
+      inp.setAttribute('aria-label', 'Navn på farve ' + (i + 1));
+      inp.addEventListener('input', () => { c.name = inp.value; });
+      const s = document.createElement('div'); s.className = 'strip';
+      c.steps.forEach(([, h]) => { const b = document.createElement('i'); b.style.background = h; s.appendChild(b); });
+      w.appendChild(inp); w.appendChild(s); $('list').appendChild(w);
+    });
+    $('form').hidden = false;
+    say(colors.length + ' farver med ' + colors[0].steps.length + ' trin hver. Ret navnene, hvis du vil.');
+  }
+  $('src').addEventListener('input', read);
+  $('go').addEventListener('click', () => {
+    const names = colors.map((c) => c.name.trim());
+    if (names.some((n) => !n)) return say('Alle farver skal have et navn.', true);
+    if (new Set(names).size !== names.length) return say('To farver har samme navn.', true);
+    $('go').disabled = true; say('Opretter …');
+    parent.postMessage({ pluginMessage: { type: 'create', name: $('name').value.trim() || 'Stilværksted',
+      colors: colors.map((c) => ({ name: c.name.trim(), steps: c.steps })),
+      opts: { vars: $('o-vars').checked, styles: $('o-styles').checked, board: $('o-board').checked } } }, '*');
+  });
+  onmessage = (e) => { const m = e.data && e.data.pluginMessage; if (!m) return; $('go').disabled = false; say(m.text, m.type === 'error'); };
+</script>

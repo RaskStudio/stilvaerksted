@@ -77,6 +77,10 @@ input[type=range]{width:100%;accent-color:var(--ink);margin:0;height:28px}
 .hero .hx{font:500 18px/1.2 var(--mono);margin-top:8px}
 .pills{display:flex;flex-wrap:wrap;gap:6px}
 .pill{font:500 12px/1 var(--mono);padding:7px 9px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+a.btn{text-decoration:none;display:inline-block}
+.how{margin-top:10px;max-width:65ch}
+.how summary{cursor:pointer;font-weight:600}
+.how ol{margin:8px 0 0;padding-left:20px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
 a.pill{text-decoration:none}a.pill:hover{border-color:var(--muted)}
 .pill.ok{color:var(--ok)} .pill.bad{color:var(--bad)}
 
@@ -482,10 +486,14 @@ T.palet={name:'Paletbygger',build(s){s.innerHTML=`
     <label class="ctl">Værdier<select id="pl-kind">${['hex','rgb','hsl','cmyk','pantone','lab','lch','oklab','oklch'].map(k=>`<option value="${k}">${k.toUpperCase()}</option>`).join('')}</select></label>
     <button class="btn" id="pl-copy" type="button">Kopiér</button><button class="btn" id="pl-file" type="button">Hent som fil</button></div><textarea id="pl-exp" readonly aria-label="Eksport"></textarea>
    <div class="row" style="margin-top:10px"><button class="btn pri" id="pl-png" type="button">Hent palet som PNG</button><button class="btn" id="pl-svg" type="button">Hent som SVG</button></div></div>
+  <div class="blk"><h2>Figma</h2><div class="row"><button class="btn pri" id="pl-figma" type="button">Kopiér til Figma</button><a class="btn" href="/stilvaerksted-figma-plugin.zip" download>Hent Figma-plugin</a></div>
+   <p class="note">Paletten kopieres med en nuanceskala (50–950) for hver farve. Pluginet opretter dem som variabler og farvestile i din Figma-fil.</p>
+   <details class="how"><summary>Sådan gør du første gang</summary><ol><li>Hent pluginet og pak zip-filen ud.</li><li>Åbn Figmas desktop-app og en designfil.</li><li>Vælg Plugins → Development → Import plugin from manifest, og peg på filen manifest.json.</li><li>Tryk "Kopiér til Figma" her på siden.</li><li>Kør pluginet Stilværksted i Figma, indsæt teksten, ret navnene, og tryk "Opret i Figma".</li></ol></details></div>
   <dialog class="fp icd" id="shd" aria-labelledby="shd-t"><div class="fp-h"><div class="fp-top"><b id="shd-t">Nuancer</b><span class="row" style="gap:6px"><span id="shd-png"></span><button class="btn" id="shd-x" type="button">Luk</button></span></div></div><div class="shl" id="shd-l"></div></dialog>`;
   const sd=$('#shd');$('#shd-x').addEventListener('click',()=>sd.close());
   sd.addEventListener('click',e=>{if(e.target===sd)return sd.close();const b=e.target.closest('[data-sh]');if(!b)return;S.palette[me.si].hex=b.dataset.sh;save();sd.close();me.update()});
   const pname=()=>$('#pl-name').value.trim()||'palet';
+  $('#pl-figma').addEventListener('click',()=>{const used={};copy(JSON.stringify({stilvaerksted:1,type:'palette',name:$('#pl-name').value.trim()||'Stilværksted',colors:S.palette.map(p=>{let n=(nearest(p.hex)[0]||{name:'farve'}).name;used[n]=(used[n]||0)+1;if(used[n]>1)n+='-'+used[n];return{name:n,hex:p.hex,shades:Object.fromEntries(twScale(p.hex).map(([h,k])=>[k,h]))}})}),{label:'Palet kopieret. Indsæt den i Stilværksted-pluginet i Figma.'})});
   $('#pl-png').addEventListener('click',()=>swatchPng(S.palette.map(p=>p.hex),pname()));
   $('#pl-svg').addEventListener('click',()=>swatchSvg(S.palette.map(p=>p.hex),pname()));
   $('#pl-file').addEventListener('click',()=>{const fm=$('#pl-form').value;dlText($('#pl-exp').value,slug(pname())+({css:'.css',scss:'.scss',json:'.json'}[fm]||'.txt'))});

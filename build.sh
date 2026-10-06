@@ -6,3 +6,4 @@ cd "$(dirname "$0")" || exit 1
   awk '/^<div class="app">/{print "</head>\n<body>"}{print}' src/app.html
   printf '</body>\n</html>\n'
 } > index.html
+rm -f stilvaerksted-figma-plugin.zip && (cd figma-plugin && zip -q -X ../stilvaerksted-figma-plugin.zip manifest.json code.js ui.html)
