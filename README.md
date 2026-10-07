@@ -2,6 +2,8 @@
 
 Personligt værktøj til farver og typografi i én HTML-fil: konverter (HEX, RGB, HSL, CMYK, Pantone, LAB, OKLCH), harmonier, paletbygger, visualisering, gradient, mixer, kontrasttjek og farver fra billede.
 
+Roller giver paletfarverne en opgave (baggrund, tekst, primær, sekundær, accent) og foreslår en mørk udgave. Stilpakke samler palet, roller, typografi og ikoner til et stilark (PNG/PDF), én CSS-fil og et delelink, hvor hele indholdet ligger i adressen efter `#s=`.
+
 Kilden er `src/app.html`. Kør `./build.sh` for at lave `index.html`, og deploy mappen som statisk side.
 
 Pantone-værdierne er vejledende og kommer fra npm-pakken `pantone-colors` (MIT).
