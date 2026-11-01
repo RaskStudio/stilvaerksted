@@ -6,7 +6,7 @@ Roller giver paletfarverne en opgave (baggrund, tekst, primær, sekundær, accen
 
 Kilden er `src/app.html`. Kør `./build.sh` for at lave `index.html`, og deploy mappen som statisk side.
 
-Pantone-værdierne er vejledende og kommer fra npm-pakken `pantone-colors` (MIT).
+Pantone-værdierne er vejledende og kommer fra npm-pakken `pantone-colors` (MIT). RAL kommer fra npm-pakken `ral-colors` (MIT). NCS-koder og hex er vejledende og hentet fra flugger.dk.
 
 ## Figma-plugin
 
